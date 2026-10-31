@@ -1,17 +1,40 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import VehicleCard from './components/VehicleCard';
+import VehicleList from './components/VehicleList';
 
 export default function App() {
-    const vehicle = {
-        brand: 'BMW',
-        model: '320d',
-        year: 2018,
-        fuelType: 'Diesel',
-        mileage: 120000,
-        nextOilChange: 130000,
-    };
-    
+    const vehicle = [
+        {
+            id: 1,
+            brand: 'BMW',
+            model: '320d',
+            year: 2018,
+            fuelType: 'Diesel',
+            mileage: 120000,
+            nextOilChange: 130000,
+        },
+        {
+            id: 2,
+            brand: 'Audi',
+            model: 'A4',
+            year: 2020,
+            fuelType: 'Petrol',
+            mileage: 50000,
+            nextOilChange: 60000,
+        },
+        {
+            id: 3,
+            brand: 'Mercedes',
+            model: 'C200',
+            year: 2019,
+            fuelType: 'Diesel',
+            mileage: 80000,
+            nextOilChange: 90000,
+        }
+    ];
+
+
     return (
         <View style={styles.container}>
            <StatusBar barStyle="light-content" />
@@ -22,7 +45,15 @@ export default function App() {
                 Your personal vehicle maintenance tracker
            </Text>
 
-           <VehicleCard vehicle={vehicle} />
+           <ScrollView
+                style={styles.scrollView}
+                showsVerticalScrollIndicator={false}
+            >
+                <VehicleList
+                    vehicles={vehicle}
+                />  
+           </ScrollView>
+        
 
            <Text style={styles.footer}>AutoCare © 2026</Text>
         </View>
@@ -47,6 +78,10 @@ const styles = StyleSheet.create({
         color: '#9CA3AF',
         textAlign: 'center',
         marginTop: 8,
+    },
+    scrollView: {
+        flex: 1,
+        marginTop: 20,
     },
     
     footer: {

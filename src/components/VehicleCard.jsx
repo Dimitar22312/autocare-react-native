@@ -2,8 +2,8 @@ import { View, Text, StyleSheet } from "react-native";
 
 export default function VehicleCard({ vehicle }) {
     return (
-        <View>
-            <Text style={styles.carCard}>🚗</Text>
+        <View style={styles.carCard}>
+            <Text style={styles.carIcon}>🚗</Text>
 
             <Text style={styles.carName}>
                 {vehicle.brand} {vehicle.model}
@@ -35,7 +35,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#1C212B',
         borderRadius: 20,
         padding: 24,
-        marginTop: 40,
     },
     carIcon: {
         fontSize: 48,
