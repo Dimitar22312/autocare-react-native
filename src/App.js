@@ -1,7 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 import VehicleCard from './components/VehicleCard';
 import VehicleList from './components/VehicleList';
+import VehicleDetails from './components/VehicleDetails';
 
 export default function App() {
     const vehicle = [
@@ -34,6 +36,16 @@ export default function App() {
         }
     ];
 
+    const [selectedVehicle, setSelectedVehicle] = useState(null);
+
+    function selectVehicleHandler(vehicle) {
+        setSelectedVehicle(vehicle);
+    }
+
+    function backHandler() {
+        setSelectedVehicle(null);
+    }
+
 
     return (
         <View style={styles.container}>
@@ -49,9 +61,17 @@ export default function App() {
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
             >
-                <VehicleList
-                    vehicles={vehicle}
-                />  
+                {selectedVehicle ? (
+                    <VehicleDetails
+                        vehicle={selectedVehicle}
+                        onBack={backHandler}
+                    />
+                ) : (
+                    <VehicleList
+                        vehicles={vehicle}
+                        onSelect={selectVehicleHandler}
+                    />
+                )}
            </ScrollView>
         
 

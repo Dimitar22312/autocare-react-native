@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 
-export default function VehicleCard({ vehicle }) {
+export default function VehicleCard({ vehicle, onPress }) {
     return (
-        <View style={styles.carCard}>
+        <Pressable onPress={onPress} style={styles.carCard}>
             <Text style={styles.carIcon}>🚗</Text>
 
             <Text style={styles.carName}>
@@ -26,7 +26,7 @@ export default function VehicleCard({ vehicle }) {
             <Text style={styles.serviceText}>
                 {vehicle.nextOilChange.toLocaleString('en-US')} km
             </Text>
-        </View>
+        </Pressable>
     );
 }
 

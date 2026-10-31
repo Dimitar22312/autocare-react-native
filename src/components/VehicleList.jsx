@@ -1,13 +1,14 @@
 import VehicleCard from "./VehicleCard";
 import { View, StyleSheet } from "react-native";
 
-export default function VehicleList({ vehicles }) {
+export default function VehicleList({ vehicles, onSelect }) {
     return (
         <View style={styles.container}>
             {vehicles.map(vehicle => (
                 <VehicleCard
                     key={vehicle.id}
                     vehicle={vehicle}
+                    onPress={() => onSelect(vehicle)}
                 />
             ))}
         </View>
