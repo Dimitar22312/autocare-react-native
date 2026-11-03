@@ -7,10 +7,15 @@ import {
     Pressable,
     StyleSheet,
 } from 'react-native';
+import { ScrollView } from 'react-native';
 
 export default function AddVehicleForm({ visible, onClose }) {
     const [brand, setBrand] = useState('');
     const [model, setModel] = useState('');
+    const [year, setYear] = useState('');
+    const [fuelType, setFuelType] = useState('');
+    const [mileage, setMileage] = useState('');
+    const [nextOilChange, setNextOilChange] = useState('');
 
     return (
         <Modal
@@ -18,7 +23,11 @@ export default function AddVehicleForm({ visible, onClose }) {
             animationType="slide"
             onRequestClose={onClose}
         >
-            <View style={styles.container}>
+            <ScrollView 
+                style={styles.container}
+                contentContainerStyle={styles.content}
+                keyboardShouldPersistTaps="handled"
+            >
                 <Text style={styles.title}>
                     Add Vehicle
                 </Text>
@@ -43,6 +52,49 @@ export default function AddVehicleForm({ visible, onClose }) {
                     onChangeText={setModel}
                 />
 
+                <Text style={styles.label}>Year</Text>
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Enter production year"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={year}
+                    onChangeText={setYear}
+                />
+
+                <Text style={styles.label}>Fuel Type</Text>
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Petrol, Diesel, Electric..."
+                    placeholderTextColor="#888"
+                    value={fuelType}
+                    onChangeText={setFuelType}
+                />
+
+                <Text style={styles.label}>Mileage</Text>
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Enter current mileage"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={mileage}
+                    onChangeText={setMileage}
+                />
+
+                <Text style={styles.label}>Next Oil Change</Text>
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Enter next oil change mileage"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={nextOilChange}
+                    onChangeText={setNextOilChange}
+                />
+
                 <Pressable
                     style={styles.closeButton}
                     onPress={onClose}
@@ -51,7 +103,7 @@ export default function AddVehicleForm({ visible, onClose }) {
                         Close
                     </Text>
                 </Pressable>
-            </View>
+            </ScrollView>
         </Modal>
     );
 }
@@ -94,4 +146,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
+    content: {
+    paddingBottom: 60,
+},
 });
