@@ -1,42 +1,51 @@
-import { StatusBar } from 'expo-status-bar';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
-import VehicleCard from './components/VehicleCard';
+import {
+    Text,
+    ScrollView,
+    Pressable,
+    StyleSheet,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+
 import VehicleList from './components/VehicleList';
 import VehicleDetails from './components/VehicleDetails';
+import AddVehicleForm from './components/AddVehicleForm';
 
 export default function App() {
-    const vehicle = [
+    const [vehicles, setVehicles] = useState([
         {
             id: 1,
             brand: 'BMW',
             model: '320d',
             year: 2018,
             fuelType: 'Diesel',
-            mileage: 120000,
-            nextOilChange: 130000,
+            mileage: 145000,
+            nextOilChange: 150000,
         },
         {
             id: 2,
             brand: 'Audi',
-            model: 'A4',
+            model: 'A6',
             year: 2020,
-            fuelType: 'Petrol',
-            mileage: 50000,
-            nextOilChange: 60000,
+            fuelType: 'Diesel',
+            mileage: 92000,
+            nextOilChange: 100000,
         },
         {
             id: 3,
-            brand: 'Mercedes',
-            model: 'C200',
+            brand: 'Mercedes-Benz',
+            model: 'C220',
             year: 2019,
             fuelType: 'Diesel',
-            mileage: 80000,
-            nextOilChange: 90000,
-        }
-    ];
+            mileage: 118000,
+            nextOilChange: 125000,
+        },
+    ]);
 
     const [selectedVehicle, setSelectedVehicle] = useState(null);
+
+    const [isAddVehicleVisible, setIsAddVehicleVisible] = useState(false);
 
     function selectVehicleHandler(vehicle) {
         setSelectedVehicle(vehicle);
@@ -46,37 +55,52 @@ export default function App() {
         setSelectedVehicle(null);
     }
 
+    function openAddVehicleHandler() {
+        setIsAddVehicleVisible(true);
+    }
+
+    function closeAddVehicleHandler() {
+        setIsAddVehicleVisible(false);
+    }
 
     return (
-        <View style={styles.container}>
-           <StatusBar barStyle="light-content" />
-
-           <Text style={styles.title}>AutoCare</Text>
-
-           <Text style={styles.subtitle}>
-                Your personal vehicle maintenance tracker
-           </Text>
-
-           <ScrollView
-                style={styles.scrollView}
-                showsVerticalScrollIndicator={false}
-            >
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.content}>
                 {selectedVehicle ? (
                     <VehicleDetails
                         vehicle={selectedVehicle}
                         onBack={backHandler}
                     />
                 ) : (
-                    <VehicleList
-                        vehicles={vehicle}
-                        onSelect={selectVehicleHandler}
-                    />
-                )}
-           </ScrollView>
-        
+                    <>
+                        <Text style={styles.title}>AutoCare</Text>
 
-           <Text style={styles.footer}>AutoCare © 2026</Text>
-        </View>
+                        <Text style={styles.subtitle}>
+                            Vehicle Maintenance Tracker
+                        </Text>
+
+                        <Pressable
+                            style={styles.addButton}
+                            onPress={openAddVehicleHandler}
+                        >
+                            <Text style={styles.addButtonText}>
+                                + Add Vehicle
+                            </Text>
+                        </Pressable>
+
+                        <VehicleList
+                            vehicles={vehicles}
+                            onSelect={selectVehicleHandler}
+                        />
+                    </>
+                )}
+            </ScrollView>
+
+            <AddVehicleForm
+                visible={isAddVehicleVisible}
+                onClose={closeAddVehicleHandler}
+            />
+        </SafeAreaView>
     );
 }
 
@@ -84,34 +108,33 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#0F1117',
-        paddingHorizontal: 24,
-        paddingTop: 70,
+    },
+    content: {
+        padding: 20,
+        paddingTop: 40,
+        paddingBottom: 40,
     },
     title: {
-        fontSize: 36,
+        fontSize: 32,
         fontWeight: 'bold',
-        color: '#FF7A00',
-        textAlign: 'center',
+        color: '#FFFFFF',
+        marginBottom: 5,
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: 16,
         color: '#9CA3AF',
-        textAlign: 'center',
-        marginTop: 8,
+        marginBottom: 25,
     },
-    scrollView: {
-        flex: 1,
-        marginTop: 20,
+    addButton: {
+        backgroundColor: '#FF7A00',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 25,
     },
-    
-    footer: {
-        color: '#6B7280',
-        textAlign: 'center',
-        marginTop: 30,
-        fontSize: 12,
+    addButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });
-
-
-
-
