@@ -63,6 +63,18 @@ export default function App() {
         setIsAddVehicleVisible(false);
     }
 
+    function addVehicleHandler(newVehicle) {
+        setVehicles(previousVehicles => [
+            ...previousVehicles,
+            {
+                ...newVehicle,
+                id: Date.now()
+            }
+        ]);
+
+        closeAddVehicleHandler();
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
@@ -99,6 +111,7 @@ export default function App() {
             <AddVehicleForm
                 visible={isAddVehicleVisible}
                 onClose={closeAddVehicleHandler}
+                onAddVehicle={addVehicleHandler}
             />
         </SafeAreaView>
     );

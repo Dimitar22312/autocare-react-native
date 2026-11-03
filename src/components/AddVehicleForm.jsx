@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import {
     Modal,
-    View,
     Text,
     TextInput,
     Pressable,
     StyleSheet,
+    KeyboardAvoidingView,
 } from 'react-native';
+import { Platform } from 'react-native';
 import { ScrollView } from 'react-native';
 
-export default function AddVehicleForm({ visible, onClose }) {
+export default function AddVehicleForm({ visible, onClose, onAddVehicle }) {
     const [brand, setBrand] = useState('');
     const [model, setModel] = useState('');
     const [year, setYear] = useState('');
@@ -17,93 +18,129 @@ export default function AddVehicleForm({ visible, onClose }) {
     const [mileage, setMileage] = useState('');
     const [nextOilChange, setNextOilChange] = useState('');
 
+    function saveVehicleHandler() {
+        const newVehicle = {
+            brand: brand.trim(),
+            model: model.trim(),
+            year: Number(year),
+            fuelType: fuelType.trim(),
+            mileage: Number(mileage),
+            nextOilChange: Number(nextOilChange),
+        };
+
+        onAddVehicle(newVehicle);
+
+        setBrand('');
+        setModel('');
+        setYear('');
+        setFuelType('');
+        setMileage('');
+        setNextOilChange('');
+    }
+
     return (
         <Modal
             visible={visible}
             animationType="slide"
             onRequestClose={onClose}
         >
-            <ScrollView 
-                style={styles.container}
-                contentContainerStyle={styles.content}
-                keyboardShouldPersistTaps="handled"
+
+            <KeyboardAvoidingView
+                style={styles.keyboardContainer}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                <Text style={styles.title}>
-                    Add Vehicle
-                </Text>
-
-                <Text style={styles.label}>Brand</Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter vehicle brand"
-                    placeholderTextColor="#888"
-                    value={brand}
-                    onChangeText={setBrand}
-                />
-
-                <Text style={styles.label}>Model</Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter vehicle model"
-                    placeholderTextColor="#888"
-                    value={model}
-                    onChangeText={setModel}
-                />
-
-                <Text style={styles.label}>Year</Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter production year"
-                    placeholderTextColor="#888"
-                    keyboardType="numeric"
-                    value={year}
-                    onChangeText={setYear}
-                />
-
-                <Text style={styles.label}>Fuel Type</Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Petrol, Diesel, Electric..."
-                    placeholderTextColor="#888"
-                    value={fuelType}
-                    onChangeText={setFuelType}
-                />
-
-                <Text style={styles.label}>Mileage</Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter current mileage"
-                    placeholderTextColor="#888"
-                    keyboardType="numeric"
-                    value={mileage}
-                    onChangeText={setMileage}
-                />
-
-                <Text style={styles.label}>Next Oil Change</Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter next oil change mileage"
-                    placeholderTextColor="#888"
-                    keyboardType="numeric"
-                    value={nextOilChange}
-                    onChangeText={setNextOilChange}
-                />
-
-                <Pressable
-                    style={styles.closeButton}
-                    onPress={onClose}
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={styles.content}
+                    keyboardShouldPersistTaps="handled"
+                    automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
                 >
-                    <Text style={styles.closeButtonText}>
-                        Close
+                    <Text style={styles.title}>
+                        Add Vehicle
                     </Text>
-                </Pressable>
-            </ScrollView>
+
+                    <Text style={styles.label}>Brand</Text>
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter vehicle brand"
+                        placeholderTextColor="#888"
+                        value={brand}
+                        onChangeText={setBrand}
+                    />
+
+                    <Text style={styles.label}>Model</Text>
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter vehicle model"
+                        placeholderTextColor="#888"
+                        value={model}
+                        onChangeText={setModel}
+                    />
+
+                    <Text style={styles.label}>Year</Text>
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter production year"
+                        placeholderTextColor="#888"
+                        keyboardType="numeric"
+                        value={year}
+                        onChangeText={setYear}
+                    />
+
+                    <Text style={styles.label}>Fuel Type</Text>
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Petrol, Diesel, Electric..."
+                        placeholderTextColor="#888"
+                        value={fuelType}
+                        onChangeText={setFuelType}
+                    />
+
+                    <Text style={styles.label}>Mileage</Text>
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter current mileage"
+                        placeholderTextColor="#888"
+                        keyboardType="numeric"
+                        value={mileage}
+                        onChangeText={setMileage}
+                    />
+
+                    <Text style={styles.label}>Next Oil Change</Text>
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter next oil change mileage"
+                        placeholderTextColor="#888"
+                        keyboardType="numeric"
+                        value={nextOilChange}
+                        onChangeText={setNextOilChange}
+                    />
+
+                    <Pressable
+                        style={styles.saveButton}
+                        onPress={saveVehicleHandler}
+                    >
+                        <Text style={styles.saveButtonText}>
+                            Save
+                        </Text>
+                    </Pressable>
+
+                    <Pressable
+                        style={styles.closeButton}
+                        onPress={onClose}
+                    >
+                        <Text style={styles.closeButtonText}>
+                            Close
+                        </Text>
+                    </Pressable>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </Modal>
     );
 }
@@ -147,6 +184,22 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     content: {
-    paddingBottom: 60,
-},
+        paddingBottom: 60,
+    },
+    saveButton: {
+        backgroundColor: '#FF7A00',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    saveButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    keyboardContainer: {
+        flex: 1,
+        backgroundColor: '#0F1117',
+    },
 });
