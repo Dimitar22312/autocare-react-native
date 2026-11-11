@@ -2,8 +2,11 @@ import { Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import VehicleDetails from '../components/VehicleDetails';
+import { useVehicles } from '../context/VehicleContext';
 
-export default function VehicleDetailsScreen({ route, navigation, vehicles }) {
+export default function VehicleDetailsScreen({ route, navigation }) {
+    const { vehicles } = useVehicles();
+
     const { vehicleId } = route.params;
 
     const vehicle = vehicles.find(

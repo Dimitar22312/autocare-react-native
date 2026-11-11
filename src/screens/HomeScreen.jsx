@@ -4,8 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import VehicleList from '../components/VehicleList';
 import AddVehicleForm from '../components/AddVehicleForm';
+import { useVehicles } from '../context/VehicleContext';
 
-export default function HomeScreen({ navigation, vehicles, onAddVehicle }) {
+export default function HomeScreen({ navigation }) {
+    const { vehicles, addVehicle } = useVehicles();
+
     const [isAddVehicleVisible, setIsAddVehicleVisible] = useState(false);
 
     function selectVehicleHandler(vehicle) {
@@ -23,7 +26,7 @@ export default function HomeScreen({ navigation, vehicles, onAddVehicle }) {
     }
 
     function addVehicleHandler(newVehicle) {
-        onAddVehicle(newVehicle);
+        addVehicle(newVehicle);
         closeAddVehicleHandler();
     }
 

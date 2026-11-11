@@ -1,42 +1,30 @@
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import HomeScreen from "../screens/HomeScreen";
-import VehicleDetailsScreen from "../screens/VehicleDetailsScreen";
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import HomeScreen from '../screens/HomeScreen';
+import VehicleDetailsScreen from '../screens/VehicleDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 
-export default function RootNavigator({ vehicles, onAddVehicle }) {
+export default function RootNavigator() {
     return (
         <Stack.Navigator>
             <Stack.Screen
                 name="Home"
+                component={HomeScreen}
                 options={{ headerShown: false }}
-            >
-                {(props) =>
-                    <HomeScreen
-                        {...props}
-                        vehicles={vehicles}
-                        onAddVehicle={onAddVehicle}
-                    />
-                }
-            </Stack.Screen>
+            />
 
             <Stack.Screen
                 name="VehicleDetails"
+                component={VehicleDetailsScreen}
                 options={{
                     title: 'Vehicle Details',
                     headerStyle: {
                         backgroundColor: '#0F1117',
                     },
-                    headerTintColor: '#FFFFFF'
+                    headerTintColor: '#FFFFFF',
                 }}
-            >
-                {(props) => (
-                    <VehicleDetailsScreen
-                        {...props}
-                        vehicles={vehicles}
-                    />
-                )}
-            </Stack.Screen>
+            />
         </Stack.Navigator>
-    )
+    );
 }
