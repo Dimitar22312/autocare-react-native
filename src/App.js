@@ -1,16 +1,6 @@
-import { useState } from 'react';
-import {
-    Text,
-    ScrollView,
-    Pressable,
-    StyleSheet,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-
-import VehicleList from './components/VehicleList';
-import VehicleDetails from './components/VehicleDetails';
-import AddVehicleForm from './components/AddVehicleForm';
+import { NavigationContainer } from "@react-navigation/native";
+import RootNavigator from "./navigation/RootNavigator";
+import { useState } from "react";
 
 export default function App() {
     const [vehicles, setVehicles] = useState([
@@ -43,111 +33,23 @@ export default function App() {
         },
     ]);
 
-    const [selectedVehicle, setSelectedVehicle] = useState(null);
-
-    const [isAddVehicleVisible, setIsAddVehicleVisible] = useState(false);
-
-    function selectVehicleHandler(vehicle) {
-        setSelectedVehicle(vehicle);
-    }
-
-    function backHandler() {
-        setSelectedVehicle(null);
-    }
-
-    function openAddVehicleHandler() {
-        setIsAddVehicleVisible(true);
-    }
-
-    function closeAddVehicleHandler() {
-        setIsAddVehicleVisible(false);
-    }
-
     function addVehicleHandler(newVehicle) {
-        setVehicles(previousVehicles => [
-            ...previousVehicles,
-            {
-                ...newVehicle,
-                id: Date.now()
-            }
-        ]);
-
-        closeAddVehicleHandler();
-    }
+    setVehicles(previousVehicles => [
+        ...previousVehicles,
+        {
+            ...newVehicle,
+            id: Date.now(),
+        },
+    ]);
+}
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                {selectedVehicle ? (
-                    <VehicleDetails
-                        vehicle={selectedVehicle}
-                        onBack={backHandler}
-                    />
-                ) : (
-                    <>
-                        <Text style={styles.title}>AutoCare</Text>
-
-                        <Text style={styles.subtitle}>
-                            Vehicle Maintenance Tracker
-                        </Text>
-
-                        <Pressable
-                            style={styles.addButton}
-                            onPress={openAddVehicleHandler}
-                        >
-                            <Text style={styles.addButtonText}>
-                                + Add Vehicle
-                            </Text>
-                        </Pressable>
-
-                        <VehicleList
-                            vehicles={vehicles}
-                            onSelect={selectVehicleHandler}
-                        />
-                    </>
-                )}
-            </ScrollView>
-
-            <AddVehicleForm
-                visible={isAddVehicleVisible}
-                onClose={closeAddVehicleHandler}
+        <NavigationContainer>
+            <RootNavigator 
+                vehicles={vehicles} 
                 onAddVehicle={addVehicleHandler}
             />
-        </SafeAreaView>
+        </NavigationContainer>
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#0F1117',
-    },
-    content: {
-        padding: 20,
-        paddingTop: 40,
-        paddingBottom: 40,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-        marginBottom: 5,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#9CA3AF',
-        marginBottom: 25,
-    },
-    addButton: {
-        backgroundColor: '#FF7A00',
-        padding: 15,
-        borderRadius: 10,
-        alignItems: 'center',
-        marginBottom: 25,
-    },
-    addButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-});
