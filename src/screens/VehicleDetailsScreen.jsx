@@ -1,11 +1,14 @@
-import { Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 
 import VehicleDetails from '../components/VehicleDetails';
+import AddVehicleForm from '../components/AddVehicleForm';
 import { useVehicles } from '../context/VehicleContext';
 
 export default function VehicleDetailsScreen({ route, navigation }) {
-    const { vehicles } = useVehicles();
+    const { vehicles, updateVehicle, deleteVehicle } = useVehicles();
+
+    const [isEditVisible, setIsEditVisible] = useState(false);
 
     const { vehicleId } = route.params;
 
@@ -13,23 +16,65 @@ export default function VehicleDetailsScreen({ route, navigation }) {
         vehicle => vehicle.id === vehicleId
     );
 
+    function openEditHandler() {
+        setIsEditVisible(true);
+    }
+
+    function closeEditHandler() {
+        setIsEditVisible(false);
+    }
+
+    function updateVehicleHandler(vehicleId, updatedData) {
+        updateVehicle(vehicleId, updatedData);
+        closeEditHandler();
+    }
+
+    function deleteVehicleHandler() {
+        Alert.alert(
+            'Delete Vehicle',
+            `Are you sure you want to delete ${vehicle.brand} ${vehicle.model}?`,
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                        deleteVehicle(vehicle.id);
+                        navigation.goBack();
+                    },
+                },
+            ]
+        );
+    }
+
     if (!vehicle) {
         return (
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <Text style={styles.errorText}>
                     Vehicle not found!
                 </Text>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <VehicleDetails
                 vehicle={vehicle}
-                onBack={() => navigation.goBack()}
+                onEdit={openEditHandler}
+                onDelete={deleteVehicleHandler}
             />
-        </SafeAreaView>
+
+            <AddVehicleForm
+                visible={isEditVisible}
+                vehicleToEdit={vehicle}
+                onUpdateVehicle={updateVehicleHandler}
+                onClose={closeEditHandler}
+            />
+        </View>
     );
 }
 
@@ -37,10 +82,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#0F1117',
-        padding: 20,
     },
     errorText: {
         fontSize: 18,
         color: '#FF7A00',
+        padding: 20,
     },
 });

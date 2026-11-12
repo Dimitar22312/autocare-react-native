@@ -43,9 +43,28 @@ export function VehicleProvider({ children }) {
         ]);
     }
 
+    function updateVehicle(vehicleId, updatedData) {
+    setVehicles(previousVehicles =>
+        previousVehicles.map(vehicle =>
+            vehicle.id === vehicleId
+                ? { ...vehicle, ...updatedData }
+                : vehicle
+        )
+    );
+}
+
+function deleteVehicle(vehicleId) {
+    setVehicles(previousVehicles =>
+        previousVehicles.filter(vehicle => vehicle.id !== vehicleId)
+    );
+}
+
     return (
-        <VehicleContext.Provider value={{ vehicles, addVehicle }}>
+        <VehicleContext.Provider 
+            value={{ vehicles, addVehicle, updateVehicle, deleteVehicle }}>
+
             {children}
+
         </VehicleContext.Provider>
     );
 }

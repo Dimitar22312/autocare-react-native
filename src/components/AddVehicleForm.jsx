@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Modal,
     Text,
@@ -6,11 +6,17 @@ import {
     Pressable,
     StyleSheet,
     KeyboardAvoidingView,
+    Platform,
+    ScrollView,
 } from 'react-native';
-import { Platform } from 'react-native';
-import { ScrollView } from 'react-native';
 
-export default function AddVehicleForm({ visible, onClose, onAddVehicle }) {
+export default function AddVehicleForm({
+    visible,
+    onClose,
+    onAddVehicle,
+    onUpdateVehicle,
+    vehicleToEdit,
+}) {
     const [brand, setBrand] = useState('');
     const [model, setModel] = useState('');
     const [year, setYear] = useState('');
@@ -18,8 +24,23 @@ export default function AddVehicleForm({ visible, onClose, onAddVehicle }) {
     const [mileage, setMileage] = useState('');
     const [nextOilChange, setNextOilChange] = useState('');
 
+    const isEditMode = Boolean(vehicleToEdit);
+
+    useEffect(() => {
+        if (!visible) {
+            return;
+        }
+
+        setBrand(vehicleToEdit?.brand ?? '');
+        setModel(vehicleToEdit?.model ?? '');
+        setYear(String(vehicleToEdit?.year ?? ''));
+        setFuelType(vehicleToEdit?.fuelType ?? '');
+        setMileage(String(vehicleToEdit?.mileage ?? ''));
+        setNextOilChange(String(vehicleToEdit?.nextOilChange ?? ''));
+    }, [visible, vehicleToEdit]);
+
     function saveVehicleHandler() {
-        const newVehicle = {
+        const vehicleData = {
             brand: brand.trim(),
             model: model.trim(),
             year: Number(year),
@@ -28,7 +49,11 @@ export default function AddVehicleForm({ visible, onClose, onAddVehicle }) {
             nextOilChange: Number(nextOilChange),
         };
 
-        onAddVehicle(newVehicle);
+        if (isEditMode) {
+            onUpdateVehicle(vehicleToEdit.id, vehicleData);
+        } else {
+            onAddVehicle(vehicleData);
+        }
 
         setBrand('');
         setModel('');
@@ -44,7 +69,6 @@ export default function AddVehicleForm({ visible, onClose, onAddVehicle }) {
             animationType="slide"
             onRequestClose={onClose}
         >
-
             <KeyboardAvoidingView
                 style={styles.keyboardContainer}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -56,7 +80,7 @@ export default function AddVehicleForm({ visible, onClose, onAddVehicle }) {
                     automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
                 >
                     <Text style={styles.title}>
-                        Add Vehicle
+                        {isEditMode ? 'Edit Vehicle' : 'Add Vehicle'}
                     </Text>
 
                     <Text style={styles.label}>Brand</Text>
