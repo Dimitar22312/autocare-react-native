@@ -1,37 +1,13 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useContext } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+
+import usePersistedState from '../hooks/usePersistedState';
 
 export const VehicleContext = createContext(null);
 
 export function VehicleProvider({ children }) {
-    const [vehicles, setVehicles] = useState([
-        {
-            id: 1,
-            brand: 'BMW',
-            model: '320d',
-            year: 2018,
-            fuelType: 'Diesel',
-            mileage: 145000,
-            nextOilChange: 150000,
-        },
-        {
-            id: 2,
-            brand: 'Audi',
-            model: 'A6',
-            year: 2020,
-            fuelType: 'Diesel',
-            mileage: 92000,
-            nextOilChange: 100000,
-        },
-        {
-            id: 3,
-            brand: 'Mercedes-Benz',
-            model: 'C220',
-            year: 2019,
-            fuelType: 'Diesel',
-            mileage: 118000,
-            nextOilChange: 125000,
-        },
-    ]);
+    const [vehicles, setVehicles, isLoaded] = 
+        usePersistedState('vehicles', []);
 
     function addVehicle(newVehicle) {
         setVehicles(previousVehicles => [
@@ -58,6 +34,24 @@ function deleteVehicle(vehicleId) {
         previousVehicles.filter(vehicle => vehicle.id !== vehicleId)
     );
 }
+
+    if (!isLoaded) {
+        return (
+            <View 
+                style={{
+                    flex: 1,
+                    backgroundColor: '#0F1117',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <ActivityIndicator
+                    size="large"
+                    color="#FF7A00"
+                />
+            </View>
+        );
+    }
 
     return (
         <VehicleContext.Provider 
