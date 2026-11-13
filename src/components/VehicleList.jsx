@@ -1,5 +1,6 @@
-import VehicleCard from "./VehicleCard";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet } from 'react-native';
+
+import VehicleCard from './VehicleCard';
 
 export default function VehicleList({ vehicles, onSelect }) {
     return (
@@ -12,11 +13,11 @@ export default function VehicleList({ vehicles, onSelect }) {
                 />
             ))}
         </View>
-    )
+    );
 }
 
 const styles = StyleSheet.create({
     container: {
-        gap: 20
-    }
-})
+        gap: 16,
+    },
+});
