@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 
+import { theme } from '../theme/theme';
+
 export default function VehicleCard({ vehicle, onPress }) {
     const mileage = Number(vehicle.mileage);
     const nextOilChange = Number(vehicle.nextOilChange);
@@ -7,16 +9,16 @@ export default function VehicleCard({ vehicle, onPress }) {
     const remainingKm = nextOilChange - mileage;
 
     let serviceStatus = 'GOOD';
-    let statusColor = '#22C55E';
+    let statusColor = theme.colors.success;
     let statusBackground = '#163A2A';
 
     if (remainingKm <= 0) {
         serviceStatus = 'OVERDUE';
-        statusColor = '#EF4444';
+        statusColor = theme.colors.danger;
         statusBackground = '#3D1F26';
     } else if (remainingKm <= 2000) {
         serviceStatus = 'DUE SOON';
-        statusColor = '#FF7A00';
+        statusColor = theme.colors.primary;
         statusBackground = '#3D2B1B';
     }
 
@@ -52,13 +54,16 @@ export default function VehicleCard({ vehicle, onPress }) {
                         styles.statusBadge,
                         { backgroundColor: statusBackground },
                     ]}
+                />
+                <View
+                    style={[
+                        styles.statusBadge,
+                        {
+                            backgroundColor: statusBackground,
+                            borderColor: statusColor,
+                        },
+                    ]}
                 >
-                    <View
-                        style={[
-                            styles.statusDot,
-                            { backgroundColor: statusColor },
-                        ]}
-                    />
 
                     <Text
                         style={[
@@ -122,15 +127,16 @@ export default function VehicleCard({ vehicle, onPress }) {
             </View>
         </Pressable>
     );
+
 }
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#1C212B',
-        borderRadius: 22,
-        padding: 20,
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.borderRadius.xl,
+        padding: theme.spacing.lg,
         borderWidth: 1,
-        borderColor: '#2B313D',
+        borderColor: theme.colors.border,
     },
 
     cardPressed: {
@@ -144,13 +150,15 @@ const styles = StyleSheet.create({
     },
 
     vehicleIconContainer: {
-        width: 54,
-        height: 54,
-        borderRadius: 16,
-        backgroundColor: '#2C3440',
+        width: 60,
+        height: 60,
+        borderRadius: theme.borderRadius.lg,
+        backgroundColor: theme.colors.surfaceLight,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 14,
+        marginRight: theme.spacing.md,
     },
 
     vehicleIcon: {
@@ -162,46 +170,49 @@ const styles = StyleSheet.create({
     },
 
     vehicleName: {
-        color: '#FFFFFF',
-        fontSize: 20,
+        color: theme.colors.text,
+        fontSize: 21,
         fontWeight: 'bold',
+        letterSpacing: -0.5,
     },
 
     vehicleSubtitle: {
-        color: '#9CA3AF',
+        color: theme.colors.textSecondary,
         fontSize: 13,
-        marginTop: 5,
+        marginTop: theme.spacing.xs,
     },
 
     arrow: {
-        color: '#9CA3AF',
+        color: theme.colors.primary,
         fontSize: 30,
+        marginLeft: theme.spacing.sm,
     },
 
     statusRow: {
-        marginTop: 18,
+        marginTop: theme.spacing.lg,
         flexDirection: 'row',
     },
 
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 7,
-        borderRadius: 20,
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.borderRadius.round,
+        borderWidth: 1,
     },
 
     statusDot: {
-        width: 7,
-        height: 7,
-        borderRadius: 4,
-        marginRight: 7,
+        width: 8,
+        height: 8,
+        borderRadius: theme.borderRadius.round,
+        marginRight: theme.spacing.sm,
     },
 
     statusText: {
         fontSize: 11,
         fontWeight: 'bold',
-        letterSpacing: 1,
+        letterSpacing: 1.2,
     },
 
     divider: {
@@ -212,6 +223,8 @@ const styles = StyleSheet.create({
 
     statsContainer: {
         flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: theme.spacing.xs,
     },
 
     stat: {
@@ -219,17 +232,18 @@ const styles = StyleSheet.create({
     },
 
     statLabel: {
-        color: '#9CA3AF',
+        color: theme.colors.textSecondary,
         fontSize: 10,
         fontWeight: 'bold',
-        letterSpacing: 0.6,
-        marginBottom: 10,
+        letterSpacing: 0.8,
+        marginBottom: theme.spacing.sm,
     },
 
     statValue: {
-        color: '#FFFFFF',
-        fontSize: 22,
+        color: theme.colors.text,
+        fontSize: 24,
         fontWeight: 'bold',
+        letterSpacing: -0.5,
     },
 
     statUnit: {
@@ -247,21 +261,24 @@ const styles = StyleSheet.create({
     serviceContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#141922',
-        padding: 14,
-        borderRadius: 12,
-        marginTop: 22,
+        backgroundColor: theme.colors.background,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        marginTop: theme.spacing.lg,
     },
 
     serviceIcon: {
-        fontSize: 17,
-        marginRight: 10,
+        fontSize: 20,
+        marginRight: theme.spacing.md,
     },
 
     serviceMessage: {
-        color: '#D1D5DB',
+        color: theme.colors.textSecondary,
         fontSize: 13,
         fontWeight: '500',
+        lineHeight: 20,
         flex: 1,
     },
 
@@ -269,19 +286,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-end',
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: theme.spacing.lg,
+        paddingTop: theme.spacing.sm,
     },
 
     detailsText: {
-        color: '#FF7A00',
+        color: theme.colors.primary,
         fontSize: 11,
         fontWeight: 'bold',
-        letterSpacing: 1.2,
+        letterSpacing: 1.5,
     },
-
     detailsArrow: {
-        color: '#FF7A00',
-        fontSize: 20,
-        marginLeft: 8,
+        color: theme.colors.primary,
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginLeft: theme.spacing.sm,
     },
 });

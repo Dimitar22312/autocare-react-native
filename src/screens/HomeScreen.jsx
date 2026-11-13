@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import VehicleList from '../components/VehicleList';
 import AddVehicleForm from '../components/AddVehicleForm';
 import { useVehicles } from '../context/VehicleContext';
+import { theme } from '../theme/theme';
 
 export default function HomeScreen({ navigation }) {
     const { vehicles, addVehicle } = useVehicles();
@@ -85,7 +86,9 @@ export default function HomeScreen({ navigation }) {
 
                 <View style={styles.statsContainer}>
                     <View style={styles.statCard}>
-                        <Text style={styles.statIcon}>🚘</Text>
+                        <View style={styles.statIconContainer}>
+                            <Text style={styles.statIcon}>🚘</Text>
+                        </View>
 
                         <Text style={styles.statNumber}>
                             {totalVehicles}
@@ -97,13 +100,15 @@ export default function HomeScreen({ navigation }) {
                     </View>
 
                     <View style={styles.statCard}>
-                        <Text style={styles.statIcon}>🔧</Text>
+                        <View style={styles.statIconContainer}>
+                            <Text style={styles.statIcon}>🔧</Text>
+                        </View>
 
                         <Text
                             style={[
                                 styles.statNumber,
                                 vehiclesNeedingAttention > 0 &&
-                                    styles.attentionNumber,
+                                styles.attentionNumber,
                             ]}
                         >
                             {vehiclesNeedingAttention}
@@ -122,13 +127,17 @@ export default function HomeScreen({ navigation }) {
                     ]}
                     onPress={openAddVehicleHandler}
                 >
-                    <Text style={styles.addButtonIcon}>＋</Text>
+                    <View style={styles.addButtonIconContainer}>
+                        <Text style={styles.addButtonIcon}>＋</Text>
+                    </View>
 
                     <Text style={styles.addButtonText}>
                         Add New Vehicle
                     </Text>
 
-                    <Text style={styles.addButtonArrow}>→</Text>
+                    <View style={styles.addButtonArrowContainer}>
+                        <Text style={styles.addButtonArrow}>→</Text>
+                    </View>
                 </Pressable>
 
                 <View style={styles.garageHeader}>
@@ -193,12 +202,12 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0F1117',
+        backgroundColor: theme.colors.background,
     },
 
     content: {
         paddingHorizontal: 20,
-        paddingTop: 20,
+        paddingTop: theme.spacing.lg,
         paddingBottom: 50,
     },
 
@@ -207,11 +216,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 36,
+        marginBottom: theme.spacing.xl,
     },
 
     welcomeText: {
-        color: '#FF7A00',
+        color: theme.colors.primary,
         fontSize: 10,
         fontWeight: 'bold',
         letterSpacing: 2,
@@ -219,18 +228,18 @@ const styles = StyleSheet.create({
     },
 
     title: {
-        color: '#FFFFFF',
+        color: theme.colors.text,
         fontSize: 36,
         fontWeight: 'bold',
         letterSpacing: -1,
     },
 
     titleAccent: {
-        color: '#FF7A00',
+        color: theme.colors.primary,
     },
 
     subtitle: {
-        color: '#9CA3AF',
+        color: theme.colors.textSecondary,
         fontSize: 13,
         marginTop: 6,
     },
@@ -238,17 +247,17 @@ const styles = StyleSheet.create({
     headerIcon: {
         width: 55,
         height: 55,
-        borderRadius: 18,
-        backgroundColor: '#1C212B',
+        borderRadius: theme.borderRadius.lg,
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
-        borderColor: '#343A46',
+        borderColor: theme.colors.border,
         alignItems: 'center',
         justifyContent: 'center',
-        marginLeft: 10,
+        marginLeft: theme.spacing.sm,
     },
 
     headerIconText: {
-        fontSize: 28,
+        fontSize: 30,
     },
 
 
@@ -257,15 +266,16 @@ const styles = StyleSheet.create({
     },
 
     sectionTitle: {
-        color: '#FFFFFF',
+        color: theme.colors.text,
         fontSize: 22,
         fontWeight: 'bold',
+        letterSpacing: -0.5,
     },
 
     sectionSubtitle: {
-        color: '#9CA3AF',
+        color: theme.colors.textSecondary,
         fontSize: 13,
-        marginTop: 5,
+        marginTop: theme.spacing.xs,
     },
 
 
@@ -277,43 +287,52 @@ const styles = StyleSheet.create({
 
     statCard: {
         flex: 1,
-        backgroundColor: '#1C212B',
-        borderRadius: 20,
-        padding: 20,
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing.md,
         borderWidth: 1,
-        borderColor: '#2B313D',
+        borderColor: theme.colors.border,
     },
 
     statIcon: {
         fontSize: 24,
-        marginBottom: 16,
     },
 
     statNumber: {
-        color: '#FFFFFF',
+        color: theme.colors.text,
         fontSize: 32,
         fontWeight: 'bold',
     },
 
     attentionNumber: {
-        color: '#FF7A00',
+        color: theme.colors.primary,
     },
 
     statLabel: {
-        color: '#9CA3AF',
+        color: theme.colors.textSecondary,
         fontSize: 12,
-        marginTop: 7,
+        marginTop: theme.spacing.sm,
     },
 
 
     addButton: {
-        backgroundColor: '#FF7A00',
-        borderRadius: 16,
-        paddingVertical: 18,
-        paddingHorizontal: 20,
+        backgroundColor: theme.colors.primary,
+        borderRadius: theme.borderRadius.lg,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 36,
+        marginBottom: theme.spacing.xl,
+    },
+
+    addButtonIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: theme.spacing.md,
     },
 
     addButtonPressed: {
@@ -321,22 +340,30 @@ const styles = StyleSheet.create({
     },
 
     addButtonIcon: {
-        color: '#FFFFFF',
+        color: theme.colors.text,
         fontSize: 26,
         fontWeight: 'bold',
-        marginRight: 12,
     },
 
     addButtonText: {
-        color: '#FFFFFF',
+        color: theme.colors.text,
         fontSize: 16,
         fontWeight: 'bold',
         flex: 1,
     },
 
     addButtonArrow: {
-        color: '#FFFFFF',
-        fontSize: 24,
+        color: theme.colors.text,
+        fontSize: 22,
+    },
+
+    addButtonArrowContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
     // Garage Section
@@ -345,19 +372,24 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: theme.spacing.lg,
     },
 
     vehicleCountBadge: {
-        backgroundColor: '#2C3440',
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 12,
+        minWidth: 42,
+        height: 42,
+        paddingHorizontal: theme.spacing.sm,
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.borderRadius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
     vehicleCountText: {
-        color: '#FFFFFF',
-        fontSize: 14,
+        color: theme.colors.primary,
+        fontSize: 16,
         fontWeight: 'bold',
     },
 
@@ -414,5 +446,14 @@ const styles = StyleSheet.create({
         color: '#FF7A00',
         fontSize: 14,
         fontWeight: 'bold',
+    },
+    statIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: theme.colors.surfaceLight,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: theme.spacing.lg,
     },
 });
