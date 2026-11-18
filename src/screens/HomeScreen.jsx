@@ -15,9 +15,15 @@ import VehicleList from '../components/VehicleList';
 import AddVehicleForm from '../components/AddVehicleForm';
 import { useVehicles } from '../context/VehicleContext';
 import { theme } from '../theme/theme';
+import { RefreshControl } from 'react-native';
 
 export default function HomeScreen({ navigation }) {
-    const { vehicles, addVehicle } = useVehicles();
+    const {
+        vehicles,
+        addVehicle,
+        refreshVehicles,
+        isRefreshing,
+    } = useVehicles();
 
     const [isAddVehicleVisible, setIsAddVehicleVisible] = useState(false);
 
@@ -44,8 +50,8 @@ export default function HomeScreen({ navigation }) {
         setIsAddVehicleVisible(false);
     }
 
-    function addVehicleHandler(newVehicle) {
-        addVehicle(newVehicle);
+    async function addVehicleHandler(newVehicle) {
+        await addVehicle(newVehicle);
         closeAddVehicleHandler();
     }
 
@@ -54,6 +60,14 @@ export default function HomeScreen({ navigation }) {
             <ScrollView
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={refreshVehicles}
+                        tintColor="#FF7A00"
+                        colors={['#FF7A00']}
+                    />
+                }
             >
                 <View style={styles.header}>
                     <View style={styles.headerInfo}>
@@ -132,7 +146,7 @@ export default function HomeScreen({ navigation }) {
                             style={[
                                 styles.statNumber,
                                 vehiclesNeedingAttention > 0 &&
-                                    styles.attentionNumber,
+                                styles.attentionNumber,
                             ]}
                         >
                             {vehiclesNeedingAttention}
@@ -146,7 +160,7 @@ export default function HomeScreen({ navigation }) {
                             style={[
                                 styles.statAccent,
                                 vehiclesNeedingAttention === 0 &&
-                                    styles.goodAccent,
+                                styles.goodAccent,
                             ]}
                         />
                     </View>

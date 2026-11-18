@@ -15,7 +15,7 @@ export default function usePersistedState(key, initialValue) {
                 if (storedState !== null && isActive) {
                     setState(JSON.parse(storedState));
                 }
-            } catch {
+            } catch (error) {
                 console.error("Failed to load data:", error);
             } finally {
                 if (isActive) {

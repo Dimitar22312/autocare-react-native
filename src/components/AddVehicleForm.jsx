@@ -189,7 +189,7 @@ export default function AddVehicleForm({
                 imageUri: savedImageUri,
             };
 
-            if (isEditMode) {
+            if (isEditMode) {   
                 await onUpdateVehicle(vehicleToEdit.id, vehicleData);
             } else {
                 await onAddVehicle(vehicleData);
