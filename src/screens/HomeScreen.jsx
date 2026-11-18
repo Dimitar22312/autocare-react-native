@@ -5,17 +5,18 @@ import {
     Text,
     ScrollView,
     Pressable,
+    RefreshControl,
     StyleSheet,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import GarageHero from '../components/GarageHero';
 import VehicleList from '../components/VehicleList';
 import AddVehicleForm from '../components/AddVehicleForm';
 import { useVehicles } from '../context/VehicleContext';
 import { theme } from '../theme/theme';
-import { RefreshControl } from 'react-native';
 
 export default function HomeScreen({ navigation }) {
     const {
@@ -28,7 +29,6 @@ export default function HomeScreen({ navigation }) {
     const [isAddVehicleVisible, setIsAddVehicleVisible] = useState(false);
 
     const totalVehicles = vehicles.length;
-
     const vehiclesNeedingAttention = vehicles.filter(vehicle => {
         const remainingKm =
             Number(vehicle.nextOilChange) - Number(vehicle.mileage);
@@ -37,9 +37,7 @@ export default function HomeScreen({ navigation }) {
     }).length;
 
     function selectVehicleHandler(vehicle) {
-        navigation.navigate('VehicleDetails', {
-            vehicleId: vehicle.id,
-        });
+        navigation.navigate('VehicleDetails', { vehicleId: vehicle.id });
     }
 
     function openAddVehicleHandler() {
@@ -56,7 +54,10 @@ export default function HomeScreen({ navigation }) {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView
+            style={styles.container}
+            edges={['top', 'left', 'right']}
+        >
             <ScrollView
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
@@ -69,45 +70,16 @@ export default function HomeScreen({ navigation }) {
                     />
                 }
             >
-                <View style={styles.header}>
-                    <View style={styles.headerInfo}>
-                        <Text style={styles.welcomeText}>
-                            YOUR VEHICLE COMPANION
-                        </Text>
-
-                        <Text style={styles.title}>
-                            Auto
-                            <Text style={styles.titleAccent}>
-                                Care
-                            </Text>
-                        </Text>
-
-                        <Text style={styles.subtitle}>
-                            Keep your vehicles in perfect shape.
-                        </Text>
-                    </View>
-
-                    <View style={styles.headerIcon}>
-                        <Ionicons
-                            name="car-sport"
-                            size={32}
-                            color="#FF7A00"
-                        />
-                    </View>
-                </View>
+                <GarageHero />
 
                 <View style={styles.dashboardHeader}>
-                    <Text style={styles.sectionTitle}>
-                        Overview
-                    </Text>
-
+                    <Text style={styles.sectionTitle}>Overview</Text>
                     <Text style={styles.sectionSubtitle}>
-                        Your garage
+                        Your garage at a glance
                     </Text>
                 </View>
 
                 <View style={styles.statsContainer}>
-
                     <View style={styles.statCard}>
                         <View style={styles.statIconContainer}>
                             <Ionicons
@@ -116,19 +88,11 @@ export default function HomeScreen({ navigation }) {
                                 color="#FF7A00"
                             />
                         </View>
-
-                        <Text style={styles.statNumber}>
-                            {totalVehicles}
-                        </Text>
-
-                        <Text style={styles.statLabel}>
-                            Total Vehicles
-                        </Text>
-
+                        <Text style={styles.statNumber}>{totalVehicles}</Text>
+                        <Text style={styles.statLabel}>Total Vehicles</Text>
                         <View style={styles.statAccent} />
                     </View>
 
-                    {/* Vehicles Needing Attention */}
                     <View style={styles.statCard}>
                         <View style={styles.statIconContainer}>
                             <Ionicons
@@ -141,32 +105,26 @@ export default function HomeScreen({ navigation }) {
                                 }
                             />
                         </View>
-
                         <Text
                             style={[
                                 styles.statNumber,
                                 vehiclesNeedingAttention > 0 &&
-                                styles.attentionNumber,
+                                    styles.attentionNumber,
                             ]}
                         >
                             {vehiclesNeedingAttention}
                         </Text>
-
-                        <Text style={styles.statLabel}>
-                            Need Attention
-                        </Text>
-
+                        <Text style={styles.statLabel}>Need Attention</Text>
                         <View
                             style={[
                                 styles.statAccent,
                                 vehiclesNeedingAttention === 0 &&
-                                styles.goodAccent,
+                                    styles.goodAccent,
                             ]}
                         />
                     </View>
                 </View>
 
-                {/* Add Vehicle Button */}
                 <Pressable
                     style={({ pressed }) => [
                         styles.addButton,
@@ -175,17 +133,9 @@ export default function HomeScreen({ navigation }) {
                     onPress={openAddVehicleHandler}
                 >
                     <View style={styles.addButtonIconContainer}>
-                        <Ionicons
-                            name="add"
-                            size={27}
-                            color="#FFFFFF"
-                        />
+                        <Ionicons name="add" size={27} color="#FFFFFF" />
                     </View>
-
-                    <Text style={styles.addButtonText}>
-                        Add New Vehicle
-                    </Text>
-
+                    <Text style={styles.addButtonText}>Add New Vehicle</Text>
                     <Ionicons
                         name="arrow-forward"
                         size={22}
@@ -193,18 +143,13 @@ export default function HomeScreen({ navigation }) {
                     />
                 </Pressable>
 
-                {/* My Garage Header */}
                 <View style={styles.garageHeader}>
                     <View>
-                        <Text style={styles.sectionTitle}>
-                            My Garage
-                        </Text>
-
+                        <Text style={styles.sectionTitle}>My Vehicles</Text>
                         <Text style={styles.sectionSubtitle}>
                             Manage your vehicles
                         </Text>
                     </View>
-
                     <View style={styles.vehicleCountBadge}>
                         <Text style={styles.vehicleCountText}>
                             {totalVehicles}
@@ -226,16 +171,13 @@ export default function HomeScreen({ navigation }) {
                                 color="#FF7A00"
                             />
                         </View>
-
                         <Text style={styles.emptyTitle}>
                             Your garage is empty
                         </Text>
-
                         <Text style={styles.emptyDescription}>
                             Add your first vehicle to start tracking
                             maintenance and keep everything under control.
                         </Text>
-
                         <Pressable
                             onPress={openAddVehicleHandler}
                             style={styles.emptyButton}
@@ -245,7 +187,6 @@ export default function HomeScreen({ navigation }) {
                                 size={20}
                                 color="#FF7A00"
                             />
-
                             <Text style={styles.emptyButtonText}>
                                 Add Your First Vehicle
                             </Text>
@@ -264,91 +205,34 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    // Main Container
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-
     content: {
         paddingHorizontal: 20,
         paddingTop: theme.spacing.lg,
-        paddingBottom: 50,
+        paddingBottom: 24,
     },
-
-    // Premium Header
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 35,
-    },
-
-    headerInfo: {
-        flex: 1,
-    },
-
-    welcomeText: {
-        color: '#FF7A00',
-        fontSize: 10,
-        fontWeight: 'bold',
-        letterSpacing: 2,
-        marginBottom: 10,
-    },
-
-    title: {
-        color: '#FFFFFF',
-        fontSize: 36,
-        fontWeight: 'bold',
-        letterSpacing: -1,
-    },
-
-    titleAccent: {
-        color: '#FF7A00',
-    },
-
-    subtitle: {
-        color: '#9CA3AF',
-        fontSize: 13,
-        marginTop: 6,
-    },
-
-    headerIcon: {
-        width: 55,
-        height: 55,
-        borderRadius: 16,
-        backgroundColor: '#1C212B',
-        borderWidth: 1,
-        borderColor: '#303641',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 12,
-    },
-
     dashboardHeader: {
         marginBottom: 16,
     },
-
     sectionTitle: {
         color: '#FFFFFF',
         fontSize: 22,
         fontWeight: 'bold',
         letterSpacing: -0.5,
     },
-
     sectionSubtitle: {
         color: '#9CA3AF',
         fontSize: 13,
         marginTop: 5,
     },
-
-    // Dashboard Statistics
     statsContainer: {
         flexDirection: 'row',
         gap: 14,
         marginBottom: 26,
     },
-
     statCard: {
         flex: 1,
         backgroundColor: '#1C212B',
@@ -359,7 +243,6 @@ const styles = StyleSheet.create({
         minHeight: 170,
         overflow: 'hidden',
     },
-
     statIconContainer: {
         width: 46,
         height: 46,
@@ -369,36 +252,29 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: 18,
     },
-
     statNumber: {
         color: '#FFFFFF',
         fontSize: 32,
         fontWeight: 'bold',
     },
-
     attentionNumber: {
         color: '#FF7A00',
     },
-
     statLabel: {
         color: '#9CA3AF',
         fontSize: 12,
         marginTop: 6,
         marginBottom: 16,
     },
-
     statAccent: {
         width: 45,
         height: 3,
         backgroundColor: '#FF7A00',
         borderRadius: 10,
     },
-
     goodAccent: {
         backgroundColor: '#22C55E',
     },
-
-    // Add Vehicle Button
     addButton: {
         backgroundColor: '#FF7A00',
         borderRadius: 16,
@@ -407,11 +283,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 35,
     },
-
     addButtonPressed: {
         opacity: 0.85,
     },
-
     addButtonIconContainer: {
         width: 42,
         height: 42,
@@ -421,22 +295,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: 14,
     },
-
     addButtonText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: 'bold',
         flex: 1,
     },
-
-    // My Garage Header
     garageHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 20,
     },
-
     vehicleCountBadge: {
         minWidth: 42,
         height: 42,
@@ -448,14 +318,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-
     vehicleCountText: {
         color: '#FF7A00',
         fontSize: 16,
         fontWeight: 'bold',
     },
-
-    // Empty State
     emptyContainer: {
         backgroundColor: '#1C212B',
         borderRadius: 22,
@@ -464,7 +331,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#303641',
     },
-
     emptyIconContainer: {
         width: 85,
         height: 85,
@@ -474,7 +340,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
     },
-
     emptyTitle: {
         color: '#FFFFFF',
         fontSize: 20,
@@ -482,7 +347,6 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         textAlign: 'center',
     },
-
     emptyDescription: {
         color: '#9CA3AF',
         fontSize: 14,
@@ -490,7 +354,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 24,
     },
-
     emptyButton: {
         borderWidth: 1,
         borderColor: '#FF7A00',
@@ -501,7 +364,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 10,
     },
-
     emptyButtonText: {
         color: '#FF7A00',
         fontSize: 14,

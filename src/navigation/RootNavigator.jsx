@@ -32,11 +32,15 @@ function GarageTabs() {
 
                 tabBarStyle: {
                     backgroundColor: '#1C212B',
-                    borderTopColor: '#303641',
-                    borderTopWidth: 1,
+                    borderTopWidth: 0,
+                    elevation: 0,
+                    shadowOpacity: 0,
                     height: 65,
                     paddingTop: 6,
                     paddingBottom: 8,
+                },
+                sceneStyle: {
+                    backgroundColor: '#0F1117',
                 },
 
                 tabBarLabelStyle: {
@@ -117,6 +121,7 @@ function MainNavigator() {
                     component={GarageTabs}
                     options={{
                         headerShown: false,
+                        title: 'My Garage',
                     }}
                 />
 
