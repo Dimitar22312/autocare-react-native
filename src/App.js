@@ -1,14 +1,20 @@
 import { NavigationContainer } from '@react-navigation/native';
+import { StatusBar } from 'react-native';
 
 import RootNavigator from './navigation/RootNavigator';
-import { VehicleProvider } from './context/VehicleContext';
+import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
     return (
-        <VehicleProvider>
+        <AuthProvider>
+            <StatusBar
+                barStyle="light-content"
+                backgroundColor="#0F1117"
+            />
+
             <NavigationContainer>
                 <RootNavigator />
             </NavigationContainer>
-        </VehicleProvider>
+        </AuthProvider>
     );
 }

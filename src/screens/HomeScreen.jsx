@@ -19,10 +19,8 @@ import { theme } from '../theme/theme';
 export default function HomeScreen({ navigation }) {
     const { vehicles, addVehicle } = useVehicles();
 
-    const [isAddVehicleVisible, setIsAddVehicleVisible] =
-        useState(false);
+    const [isAddVehicleVisible, setIsAddVehicleVisible] = useState(false);
 
-    // Dashboard Statistics
     const totalVehicles = vehicles.length;
 
     const vehiclesNeedingAttention = vehicles.filter(vehicle => {
@@ -32,14 +30,12 @@ export default function HomeScreen({ navigation }) {
         return remainingKm <= 1000;
     }).length;
 
-    // Navigation
     function selectVehicleHandler(vehicle) {
         navigation.navigate('VehicleDetails', {
             vehicleId: vehicle.id,
         });
     }
 
-    // Add Vehicle Modal
     function openAddVehicleHandler() {
         setIsAddVehicleVisible(true);
     }
@@ -59,7 +55,6 @@ export default function HomeScreen({ navigation }) {
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Premium Header */}
                 <View style={styles.header}>
                     <View style={styles.headerInfo}>
                         <Text style={styles.welcomeText}>
@@ -87,21 +82,18 @@ export default function HomeScreen({ navigation }) {
                     </View>
                 </View>
 
-                {/* Overview Header */}
                 <View style={styles.dashboardHeader}>
                     <Text style={styles.sectionTitle}>
                         Overview
                     </Text>
 
                     <Text style={styles.sectionSubtitle}>
-                        Your garage at a glance
+                        Your garage
                     </Text>
                 </View>
 
-                {/* Dashboard Statistics */}
                 <View style={styles.statsContainer}>
 
-                    {/* Total Vehicles */}
                     <View style={styles.statCard}>
                         <View style={styles.statIconContainer}>
                             <Ionicons
