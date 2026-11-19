@@ -17,6 +17,7 @@ import {
 
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import FuelTypePicker from './FuelTypePicker';
 
 export default function AddVehicleForm({
     visible,
@@ -340,12 +341,10 @@ export default function AddVehicleForm({
                         Fuel Type
                     </Text>
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Petrol, Diesel, Electric..."
-                        placeholderTextColor="#888"
+                    <FuelTypePicker
                         value={fuelType}
-                        onChangeText={setFuelType}
+                        onChange={setFuelType}
+                        enabled={!isSaving}
                     />
 
 
