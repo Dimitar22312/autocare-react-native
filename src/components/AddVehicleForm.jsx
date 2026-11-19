@@ -17,7 +17,9 @@ import {
 
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+
 import FuelTypePicker from './FuelTypePicker';
+import { validateVehicle } from '../utils/vehicleValidation';
 
 export default function AddVehicleForm({
     visible,
@@ -39,6 +41,8 @@ export default function AddVehicleForm({
 
     const [isSaving, setIsSaving] = useState(false);
 
+    const [errors, setErrors] = useState({});
+
     const isEditMode = Boolean(vehicleToEdit);
 
     useEffect(() => {
@@ -51,6 +55,7 @@ export default function AddVehicleForm({
         setYear(String(vehicleToEdit?.year ?? ''));
         setFuelType(vehicleToEdit?.fuelType ?? '');
         setMileage(String(vehicleToEdit?.mileage ?? ''));
+
         setNextOilChange(
             String(vehicleToEdit?.nextOilChange ?? '')
         );
@@ -58,7 +63,25 @@ export default function AddVehicleForm({
         setImageUri(vehicleToEdit?.imageUri ?? null);
         setIsNewImageSelected(false);
 
+        setErrors({});
+
     }, [visible, vehicleToEdit]);
+
+    function updateField(setter, field, value) {
+        setter(value);
+
+        setErrors((currentErrors) => {
+            if (!currentErrors[field]) {
+                return currentErrors;
+            }
+
+            const updatedErrors = { ...currentErrors };
+
+            delete updatedErrors[field];
+
+            return updatedErrors;
+        });
+    }
 
     function handleSelectedImage(imageAsset) {
         if (!imageAsset?.uri) {
@@ -91,7 +114,10 @@ export default function AddVehicleForm({
                     quality: 0.8,
                 });
 
-            if (!result.canceled && result.assets?.length > 0) {
+            if (
+                !result.canceled &&
+                result.assets?.length > 0
+            ) {
                 handleSelectedImage(result.assets[0]);
             }
 
@@ -127,7 +153,10 @@ export default function AddVehicleForm({
                     quality: 0.8,
                 });
 
-            if (!result.canceled && result.assets?.length > 0) {
+            if (
+                !result.canceled &&
+                result.assets?.length > 0
+            ) {
                 handleSelectedImage(result.assets[0]);
             }
 
@@ -146,6 +175,21 @@ export default function AddVehicleForm({
             return;
         }
 
+        const validationErrors = validateVehicle({
+            brand,
+            model,
+            year,
+            fuelType,
+            mileage,
+            nextOilChange,
+        });
+
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
+
+        setErrors({});
         setIsSaving(true);
 
         try {
@@ -157,10 +201,8 @@ export default function AddVehicleForm({
                 mileage: Number(mileage),
                 nextOilChange: Number(nextOilChange),
 
-
                 imagePath:
                     vehicleToEdit?.imagePath ?? null,
-
 
                 newImageUri:
                     isNewImageSelected ? imageUri : null,
@@ -184,6 +226,7 @@ export default function AddVehicleForm({
 
             setImageUri(null);
             setIsNewImageSelected(false);
+            setErrors({});
 
         } catch (error) {
             console.error('Save Vehicle Error:', error);
@@ -191,7 +234,7 @@ export default function AddVehicleForm({
             Alert.alert(
                 'Save Vehicle Error',
                 error.message ||
-                'Unable to save the vehicle.'
+                    'Unable to save the vehicle.'
             );
 
         } finally {
@@ -222,6 +265,7 @@ export default function AddVehicleForm({
                     }
                     showsVerticalScrollIndicator={false}
                 >
+
                     <Text style={styles.title}>
                         {isEditMode
                             ? 'Edit Vehicle'
@@ -231,7 +275,6 @@ export default function AddVehicleForm({
                     <Text style={styles.sectionTitle}>
                         Vehicle Photo
                     </Text>
-
 
                     <View style={styles.imageContainer}>
                         {imageUri ? (
@@ -256,7 +299,6 @@ export default function AddVehicleForm({
                             </View>
                         )}
                     </View>
-
 
                     <View style={styles.imageActions}>
                         <Pressable
@@ -296,46 +338,87 @@ export default function AddVehicleForm({
                         Vehicle Information
                     </Text>
 
-
                     <Text style={styles.label}>
                         Brand
                     </Text>
 
                     <TextInput
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            errors.brand && styles.inputError,
+                        ]}
                         placeholder="Enter vehicle brand"
                         placeholderTextColor="#888"
                         value={brand}
-                        onChangeText={setBrand}
+                        onChangeText={(value) =>
+                            updateField(
+                                setBrand,
+                                'brand',
+                                value
+                            )
+                        }
                     />
 
+                    {errors.brand && (
+                        <Text style={styles.errorText}>
+                            {errors.brand}
+                        </Text>
+                    )}
 
                     <Text style={styles.label}>
                         Model
                     </Text>
 
                     <TextInput
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            errors.model && styles.inputError,
+                        ]}
                         placeholder="Enter vehicle model"
                         placeholderTextColor="#888"
                         value={model}
-                        onChangeText={setModel}
+                        onChangeText={(value) =>
+                            updateField(
+                                setModel,
+                                'model',
+                                value
+                            )
+                        }
                     />
 
+                    {errors.model && (
+                        <Text style={styles.errorText}>
+                            {errors.model}
+                        </Text>
+                    )}
 
                     <Text style={styles.label}>
                         Year
                     </Text>
 
                     <TextInput
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            errors.year && styles.inputError,
+                        ]}
                         placeholder="Enter production year"
                         placeholderTextColor="#888"
                         keyboardType="numeric"
                         value={year}
-                        onChangeText={setYear}
+                        onChangeText={(value) =>
+                            updateField(
+                                setYear,
+                                'year',
+                                value
+                            )
+                        }
                     />
 
+                    {errors.year && (
+                        <Text style={styles.errorText}>
+                            {errors.year}
+                        </Text>
+                    )}
 
                     <Text style={styles.label}>
                         Fuel Type
@@ -343,38 +426,78 @@ export default function AddVehicleForm({
 
                     <FuelTypePicker
                         value={fuelType}
-                        onChange={setFuelType}
+                        onChange={(value) =>
+                            updateField(
+                                setFuelType,
+                                'fuelType',
+                                value
+                            )
+                        }
                         enabled={!isSaving}
                     />
 
+                    {errors.fuelType && (
+                        <Text style={styles.errorText}>
+                            {errors.fuelType}
+                        </Text>
+                    )}
 
                     <Text style={styles.label}>
                         Mileage
                     </Text>
 
                     <TextInput
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            errors.mileage && styles.inputError,
+                        ]}
                         placeholder="Enter current mileage"
                         placeholderTextColor="#888"
-                        keyboardType="numeric"
+                        keyboardType="default"
                         value={mileage}
-                        onChangeText={setMileage}
+                        onChangeText={(value) =>
+                            updateField(
+                                setMileage,
+                                'mileage',
+                                value
+                            )
+                        }
                     />
 
+                    {errors.mileage && (
+                        <Text style={styles.errorText}>
+                            {errors.mileage}
+                        </Text>
+                    )}
 
                     <Text style={styles.label}>
                         Next Oil Change
                     </Text>
 
                     <TextInput
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            errors.nextOilChange &&
+                                styles.inputError,
+                        ]}
                         placeholder="Enter next oil change mileage"
                         placeholderTextColor="#888"
-                        keyboardType="numeric"
+                        keyboardType="default"
                         value={nextOilChange}
-                        onChangeText={setNextOilChange}
+                        onChangeText={(value) =>
+                            updateField(
+                                setNextOilChange,
+                                'nextOilChange',
+                                value
+                            )
+                        }
                     />
 
+                    {errors.nextOilChange && (
+                        <Text style={styles.errorText}>
+                            {errors.nextOilChange}
+                        </Text>
+                    )}
 
                     <Pressable
                         style={[
@@ -405,7 +528,6 @@ export default function AddVehicleForm({
                         )}
                     </Pressable>
 
-
                     <Pressable
                         style={styles.closeButton}
                         onPress={onClose}
@@ -415,6 +537,7 @@ export default function AddVehicleForm({
                             Close
                         </Text>
                     </Pressable>
+
                 </ScrollView>
             </KeyboardAvoidingView>
         </Modal>
@@ -533,6 +656,19 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         marginBottom: 20,
         fontSize: 16,
+    },
+
+    inputError: {
+        borderWidth: 1,
+        borderColor: '#F87171',
+    },
+
+    errorText: {
+        color: '#FCA5A5',
+        fontSize: 13,
+        marginTop: -14,
+        marginBottom: 16,
+        marginLeft: 2,
     },
 
     saveButton: {
