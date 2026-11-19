@@ -1,13 +1,22 @@
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function GarageHero() {
+    const { width } = useWindowDimensions();
     return (
-        <View style={styles.container}>
+        <View 
+            style={[
+                styles.container,
+                {
+                    width,
+                    marginRight: -20,
+                },
+            ]}
+            >
             <Image
                 source={require('../../assets/bmw-hero.png')}
                 style={styles.backgroundCar}
-                resizeMode="contain"
+                resizeMode="cover"
                 pointerEvents="none"
                 accessible={false}
             />
@@ -53,6 +62,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 12,
         paddingTop: 8,
+        paddingHorizontal: 20,
     },
     brandName: {
         color: '#FFFFFF',
@@ -65,6 +75,7 @@ const styles = StyleSheet.create({
     },
     headlineContainer: {
         marginTop: 44,
+        paddingHorizontal: 20,
         alignItems: 'flex-start',
     },
     eyebrow: {

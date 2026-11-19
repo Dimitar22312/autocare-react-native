@@ -15,12 +15,32 @@ import {
 } from 'react-native';
 
 import { supabase } from '../lib/supabase';
+
 import { useAuth } from './AuthContext';
+
+import {
+    uploadVehicleImage,
+    getVehicleImageUrl,
+    deleteVehicleImage,
+    isStorageImage,
+} from '../services/vehicleImageService';
 
 export const VehicleContext = createContext(null);
 
-// Convert PostgreSQL data to React Native vehicle object
-function mapVehicle(vehicle) {
+async function mapVehicle(vehicle) {
+    let imageUri = null;
+
+    try {
+        imageUri = await getVehicleImageUrl(
+            vehicle.image_path
+        );
+    } catch (error) {
+        console.error(
+            'Vehicle Image Error:',
+            error
+        );
+    }
+
     return {
         id: vehicle.id,
         brand: vehicle.brand,
@@ -29,7 +49,10 @@ function mapVehicle(vehicle) {
         fuelType: vehicle.fuel_type,
         mileage: vehicle.mileage,
         nextOilChange: vehicle.next_oil_change,
-        imageUri: vehicle.image_path,
+
+        imageUri,
+
+        imagePath: vehicle.image_path,
     };
 }
 
@@ -41,7 +64,6 @@ function mapVehicleToDatabase(vehicle) {
         fuel_type: vehicle.fuelType,
         mileage: Number(vehicle.mileage),
         next_oil_change: Number(vehicle.nextOilChange),
-        image_path: vehicle.imageUri || null,
     };
 }
 
@@ -51,55 +73,68 @@ export function VehicleProvider({ children }) {
     const [vehicles, setVehicles] = useState([]);
 
     const [isLoading, setIsLoading] = useState(true);
+
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const [loadError, setLoadError] = useState(null);
 
-    const fetchVehicles = useCallback(async (refresh = false) => {
-        if (!user?.id) {
-            setVehicles([]);
-            setIsLoading(false);
-            return;
-        }
-
-        if (refresh) {
-            setIsRefreshing(true);
-        } else {
-            setIsLoading(true);
-        }
-
-        setLoadError(null);
-
-        try {
-            const { data, error } = await supabase
-                .from('vehicles')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                throw error;
+    const fetchVehicles = useCallback(
+        async (refresh = false) => {
+            if (!user?.id) {
+                setVehicles([]);
+                setIsLoading(false);
+                return;
             }
 
-            const formattedVehicles = (data || []).map(mapVehicle);
+            if (refresh) {
+                setIsRefreshing(true);
+            } else {
+                setIsLoading(true);
+            }
 
-            setVehicles(formattedVehicles);
-        } catch (error) {
-            console.error('Fetch Vehicles Error:', error);
+            setLoadError(null);
 
-            setLoadError(
-                error.message || 'Unable to load vehicles.'
-            );
-        } finally {
-            setIsLoading(false);
-            setIsRefreshing(false);
-        }
-    }, [user?.id]);
+            try {
+                const { data, error } = await supabase
+                    .from('vehicles')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', {
+                        ascending: false,
+                    });
+
+                if (error) {
+                    throw error;
+                }
+
+                const formattedVehicles = await Promise.all(
+                    (data || []).map(mapVehicle)
+                );
+
+                setVehicles(formattedVehicles);
+
+            } catch (error) {
+                console.error(
+                    'Fetch Vehicles Error:',
+                    error
+                );
+
+                setLoadError(
+                    error.message ||
+                    'Unable to load vehicles.'
+                );
+
+            } finally {
+                setIsLoading(false);
+                setIsRefreshing(false);
+            }
+        },
+        [user?.id]
+    );
 
     useEffect(() => {
         fetchVehicles();
     }, [fetchVehicles]);
-
 
     async function refreshVehicles() {
         await fetchVehicles(true);
@@ -110,30 +145,67 @@ export function VehicleProvider({ children }) {
             throw new Error('You must be logged in.');
         }
 
-        const vehicleData = {
-            ...mapVehicleToDatabase(newVehicle),
-            user_id: user.id,
-        };
+        let uploadedImagePath = null;
 
-        const { data, error } = await supabase
-            .from('vehicles')
-            .insert(vehicleData)
-            .select()
-            .single();
+        try {
+            if (newVehicle.newImageUri) {
+                uploadedImagePath = await uploadVehicleImage(
+                    newVehicle.newImageUri,
+                    user.id
+                );
+            }
 
-        if (error) {
-            console.error('Add Vehicle Error:', error);
+            const vehicleData = {
+                ...mapVehicleToDatabase(newVehicle),
+
+                user_id: user.id,
+
+                image_path:
+                    uploadedImagePath ||
+                    newVehicle.imagePath ||
+                    null,
+            };
+
+            const { data, error } = await supabase
+                .from('vehicles')
+                .insert(vehicleData)
+                .select()
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            const createdVehicle = await mapVehicle(data);
+
+            setVehicles(previousVehicles => [
+                createdVehicle,
+                ...previousVehicles,
+            ]);
+
+            return createdVehicle;
+
+        } catch (error) {
+            if (uploadedImagePath) {
+                try {
+                    await deleteVehicleImage(
+                        uploadedImagePath
+                    );
+                } catch (cleanupError) {
+                    console.error(
+                        'Image Cleanup Error:',
+                        cleanupError
+                    );
+                }
+            }
+
+            console.error(
+                'Add Vehicle Error:',
+                error
+            );
+
             throw error;
         }
-
-        const createdVehicle = mapVehicle(data);
-
-        setVehicles(previousVehicles => [
-            createdVehicle,
-            ...previousVehicles,
-        ]);
-
-        return createdVehicle;
     }
 
     async function updateVehicle(vehicleId, updatedData) {
@@ -141,38 +213,104 @@ export function VehicleProvider({ children }) {
             throw new Error('You must be logged in.');
         }
 
-        const vehicleData = mapVehicleToDatabase(updatedData);
-
-        const { data, error } = await supabase
-            .from('vehicles')
-            .update(vehicleData)
-            .eq('id', vehicleId)
-            .eq('user_id', user.id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Update Vehicle Error:', error);
-            throw error;
-        }
-
-        const updatedVehicle = mapVehicle(data);
-
-        setVehicles(previousVehicles =>
-            previousVehicles.map(vehicle =>
-                vehicle.id === vehicleId
-                    ? updatedVehicle
-                    : vehicle
-            )
+        const existingVehicle = vehicles.find(
+            vehicle => vehicle.id === vehicleId
         );
 
-        return updatedVehicle;
+        if (!existingVehicle) {
+            throw new Error('Vehicle not found.');
+        }
+
+        const oldImagePath = existingVehicle.imagePath;
+
+        let uploadedImagePath = null;
+
+        try {
+            if (updatedData.newImageUri) {
+                uploadedImagePath = await uploadVehicleImage(
+                    updatedData.newImageUri,
+                    user.id
+                );
+            }
+
+            const vehicleData = {
+                ...mapVehicleToDatabase(updatedData),
+
+                image_path:
+                    uploadedImagePath ||
+                    oldImagePath ||
+                    null,
+            };
+
+            const { data, error } = await supabase
+                .from('vehicles')
+                .update(vehicleData)
+                .eq('id', vehicleId)
+                .eq('user_id', user.id)
+                .select()
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            const updatedVehicle = await mapVehicle(data);
+
+            setVehicles(previousVehicles =>
+                previousVehicles.map(vehicle =>
+                    vehicle.id === vehicleId
+                        ? updatedVehicle
+                        : vehicle
+                )
+            );
+
+            if (
+                uploadedImagePath &&
+                isStorageImage(oldImagePath)
+            ) {
+                try {
+                    await deleteVehicleImage(oldImagePath);
+                } catch (cleanupError) {
+                    console.error(
+                        'Old Image Cleanup Error:',
+                        cleanupError
+                    );
+                }
+            }
+
+            return updatedVehicle;
+
+        } catch (error) {
+            if (uploadedImagePath) {
+                try {
+                    await deleteVehicleImage(
+                        uploadedImagePath
+                    );
+                } catch (cleanupError) {
+                    console.error(
+                        'Image Cleanup Error:',
+                        cleanupError
+                    );
+                }
+            }
+
+            console.error(
+                'Update Vehicle Error:',
+                error
+            );
+
+            throw error;
+        }
     }
 
     async function deleteVehicle(vehicleId) {
         if (!user?.id) {
             throw new Error('You must be logged in.');
         }
+
+        const existingVehicle = vehicles.find(
+            vehicle => vehicle.id === vehicleId
+        );
 
         const { data, error } = await supabase
             .from('vehicles')
@@ -182,12 +320,18 @@ export function VehicleProvider({ children }) {
             .select('id');
 
         if (error) {
-            console.error('Delete Vehicle Error:', error);
+            console.error(
+                'Delete Vehicle Error:',
+                error
+            );
+
             throw error;
         }
 
         if (!data?.length) {
-            throw new Error('Vehicle not found or access denied.');
+            throw new Error(
+                'Vehicle not found or access denied.'
+            );
         }
 
         setVehicles(previousVehicles =>
@@ -195,6 +339,22 @@ export function VehicleProvider({ children }) {
                 vehicle => vehicle.id !== vehicleId
             )
         );
+
+        if (
+            existingVehicle &&
+            isStorageImage(existingVehicle.imagePath)
+        ) {
+            try {
+                await deleteVehicleImage(
+                    existingVehicle.imagePath
+                );
+            } catch (cleanupError) {
+                console.error(
+                    'Deleted Vehicle Image Cleanup Error:',
+                    cleanupError
+                );
+            }
+        }
     }
 
     if (isLoading) {
@@ -242,8 +402,10 @@ export function VehicleProvider({ children }) {
                 isLoading,
                 isRefreshing,
                 loadError,
+
                 fetchVehicles,
                 refreshVehicles,
+
                 addVehicle,
                 updateVehicle,
                 deleteVehicle,
@@ -259,7 +421,7 @@ export function useVehicles() {
 
     if (!context) {
         throw new Error(
-            'useVehicles must be used within a VehicleProvider'
+            'useVehicles must be used within VehicleProvider'
         );
     }
 

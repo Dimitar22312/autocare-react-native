@@ -17,7 +17,6 @@ import {
 
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 
 export default function AddVehicleForm({
     visible,
@@ -34,8 +33,8 @@ export default function AddVehicleForm({
     const [nextOilChange, setNextOilChange] = useState('');
 
     const [imageUri, setImageUri] = useState(null);
-    const [imageExtension, setImageExtension] = useState('jpg');
-    const [isNewImageSelected, setIsNewImageSelected] = useState(false);
+    const [isNewImageSelected, setIsNewImageSelected] =
+        useState(false);
 
     const [isSaving, setIsSaving] = useState(false);
 
@@ -51,11 +50,13 @@ export default function AddVehicleForm({
         setYear(String(vehicleToEdit?.year ?? ''));
         setFuelType(vehicleToEdit?.fuelType ?? '');
         setMileage(String(vehicleToEdit?.mileage ?? ''));
-        setNextOilChange(String(vehicleToEdit?.nextOilChange ?? ''));
+        setNextOilChange(
+            String(vehicleToEdit?.nextOilChange ?? '')
+        );
 
         setImageUri(vehicleToEdit?.imageUri ?? null);
-        setImageExtension('jpg');
         setIsNewImageSelected(false);
+
     }, [visible, vehicleToEdit]);
 
     function handleSelectedImage(imageAsset) {
@@ -63,14 +64,7 @@ export default function AddVehicleForm({
             return;
         }
 
-        const extension = imageAsset.mimeType === 'image/png'
-            ? 'png'
-            : imageAsset.mimeType === 'image/heic'
-                ? 'heic'
-                : 'jpg';
-
         setImageUri(imageAsset.uri);
-        setImageExtension(extension);
         setIsNewImageSelected(true);
     }
 
@@ -88,12 +82,13 @@ export default function AddVehicleForm({
                 return;
             }
 
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'],
-                allowsEditing: true,
-                aspect: [16, 9],
-                quality: 0.8,
-            });
+            const result =
+                await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ['images'],
+                    allowsEditing: true,
+                    aspect: [16, 9],
+                    quality: 0.8,
+                });
 
             if (!result.canceled && result.assets?.length > 0) {
                 handleSelectedImage(result.assets[0]);
@@ -123,12 +118,13 @@ export default function AddVehicleForm({
                 return;
             }
 
-            const result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ['images'],
-                allowsEditing: true,
-                aspect: [16, 9],
-                quality: 0.8,
-            });
+            const result =
+                await ImagePicker.launchCameraAsync({
+                    mediaTypes: ['images'],
+                    allowsEditing: true,
+                    aspect: [16, 9],
+                    quality: 0.8,
+                });
 
             if (!result.canceled && result.assets?.length > 0) {
                 handleSelectedImage(result.assets[0]);
@@ -144,27 +140,6 @@ export default function AddVehicleForm({
         }
     }
 
-    async function saveImageLocally(uri) {
-        const directory =
-            `${FileSystem.documentDirectory}vehicle-images/`;
-
-        await FileSystem.makeDirectoryAsync(directory, {
-            intermediates: true,
-        });
-
-        const fileName =
-            `vehicle-${Date.now()}-${Math.floor(Math.random() * 1000000)}.${imageExtension}`;
-
-        const permanentUri = `${directory}${fileName}`;
-
-        await FileSystem.copyAsync({
-            from: uri,
-            to: permanentUri,
-        });
-
-        return permanentUri;
-    }
-
     async function saveVehicleHandler() {
         if (isSaving) {
             return;
@@ -173,12 +148,6 @@ export default function AddVehicleForm({
         setIsSaving(true);
 
         try {
-            let savedImageUri = imageUri;
-
-            if (isNewImageSelected && imageUri) {
-                savedImageUri = await saveImageLocally(imageUri);
-            }
-
             const vehicleData = {
                 brand: brand.trim(),
                 model: model.trim(),
@@ -186,11 +155,21 @@ export default function AddVehicleForm({
                 fuelType: fuelType.trim(),
                 mileage: Number(mileage),
                 nextOilChange: Number(nextOilChange),
-                imageUri: savedImageUri,
+
+
+                imagePath:
+                    vehicleToEdit?.imagePath ?? null,
+
+
+                newImageUri:
+                    isNewImageSelected ? imageUri : null,
             };
 
-            if (isEditMode) {   
-                await onUpdateVehicle(vehicleToEdit.id, vehicleData);
+            if (isEditMode) {
+                await onUpdateVehicle(
+                    vehicleToEdit.id,
+                    vehicleData
+                );
             } else {
                 await onAddVehicle(vehicleData);
             }
@@ -201,17 +180,19 @@ export default function AddVehicleForm({
             setFuelType('');
             setMileage('');
             setNextOilChange('');
+
             setImageUri(null);
-            setImageExtension('jpg');
             setIsNewImageSelected(false);
 
         } catch (error) {
             console.error('Save Vehicle Error:', error);
 
             Alert.alert(
-                'Error',
+                'Save Vehicle Error',
+                error.message ||
                 'Unable to save the vehicle.'
             );
+
         } finally {
             setIsSaving(false);
         }
@@ -225,22 +206,31 @@ export default function AddVehicleForm({
         >
             <KeyboardAvoidingView
                 style={styles.keyboardContainer}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={
+                    Platform.OS === 'ios'
+                        ? 'padding'
+                        : 'height'
+                }
             >
                 <ScrollView
                     style={styles.container}
                     contentContainerStyle={styles.content}
                     keyboardShouldPersistTaps="handled"
-                    automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+                    automaticallyAdjustKeyboardInsets={
+                        Platform.OS === 'ios'
+                    }
                     showsVerticalScrollIndicator={false}
                 >
                     <Text style={styles.title}>
-                        {isEditMode ? 'Edit Vehicle' : 'Add Vehicle'}
+                        {isEditMode
+                            ? 'Edit Vehicle'
+                            : 'Add Vehicle'}
                     </Text>
 
                     <Text style={styles.sectionTitle}>
                         Vehicle Photo
                     </Text>
+
 
                     <View style={styles.imageContainer}>
                         {imageUri ? (
@@ -257,15 +247,17 @@ export default function AddVehicleForm({
                                     color="#FF7A00"
                                 />
 
-                                <Text style={styles.imagePlaceholderText}>
+                                <Text
+                                    style={styles.imagePlaceholderText}
+                                >
                                     Add your vehicle photo
                                 </Text>
                             </View>
                         )}
                     </View>
 
-                    <View style={styles.imageActions}>
 
+                    <View style={styles.imageActions}>
                         <Pressable
                             style={styles.imageButton}
                             onPress={pickImageHandler}
@@ -297,14 +289,16 @@ export default function AddVehicleForm({
                                 Take Photo
                             </Text>
                         </Pressable>
-
                     </View>
 
                     <Text style={styles.sectionTitle}>
                         Vehicle Information
                     </Text>
 
-                    <Text style={styles.label}>Brand</Text>
+
+                    <Text style={styles.label}>
+                        Brand
+                    </Text>
 
                     <TextInput
                         style={styles.input}
@@ -314,7 +308,10 @@ export default function AddVehicleForm({
                         onChangeText={setBrand}
                     />
 
-                    <Text style={styles.label}>Model</Text>
+
+                    <Text style={styles.label}>
+                        Model
+                    </Text>
 
                     <TextInput
                         style={styles.input}
@@ -324,7 +321,10 @@ export default function AddVehicleForm({
                         onChangeText={setModel}
                     />
 
-                    <Text style={styles.label}>Year</Text>
+
+                    <Text style={styles.label}>
+                        Year
+                    </Text>
 
                     <TextInput
                         style={styles.input}
@@ -335,7 +335,10 @@ export default function AddVehicleForm({
                         onChangeText={setYear}
                     />
 
-                    <Text style={styles.label}>Fuel Type</Text>
+
+                    <Text style={styles.label}>
+                        Fuel Type
+                    </Text>
 
                     <TextInput
                         style={styles.input}
@@ -345,7 +348,10 @@ export default function AddVehicleForm({
                         onChangeText={setFuelType}
                     />
 
-                    <Text style={styles.label}>Mileage</Text>
+
+                    <Text style={styles.label}>
+                        Mileage
+                    </Text>
 
                     <TextInput
                         style={styles.input}
@@ -355,6 +361,7 @@ export default function AddVehicleForm({
                         value={mileage}
                         onChangeText={setMileage}
                     />
+
 
                     <Text style={styles.label}>
                         Next Oil Change
@@ -369,6 +376,7 @@ export default function AddVehicleForm({
                         onChangeText={setNextOilChange}
                     />
 
+
                     <Pressable
                         style={[
                             styles.saveButton,
@@ -378,7 +386,9 @@ export default function AddVehicleForm({
                         disabled={isSaving}
                     >
                         {isSaving ? (
-                            <ActivityIndicator color="#FFFFFF" />
+                            <ActivityIndicator
+                                color="#FFFFFF"
+                            />
                         ) : (
                             <>
                                 <Ionicons
@@ -387,12 +397,15 @@ export default function AddVehicleForm({
                                     color="#FFFFFF"
                                 />
 
-                                <Text style={styles.saveButtonText}>
+                                <Text
+                                    style={styles.saveButtonText}
+                                >
                                     Save Vehicle
                                 </Text>
                             </>
                         )}
                     </Pressable>
+
 
                     <Pressable
                         style={styles.closeButton}
@@ -403,7 +416,6 @@ export default function AddVehicleForm({
                             Close
                         </Text>
                     </Pressable>
-
                 </ScrollView>
             </KeyboardAvoidingView>
         </Modal>
