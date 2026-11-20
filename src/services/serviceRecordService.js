@@ -46,6 +46,34 @@ export async function createServiceRecord(
     return data;
 }
 
+export async function updateServiceRecord(
+    userId,
+    recordId,
+    serviceData
+) {
+    const { data, error } = await supabase
+        .from('service_records')
+        .update({
+            service_type: serviceData.serviceType,
+            service_date: serviceData.serviceDate,
+
+            mileage: Number(serviceData.mileage),
+            cost: Number(serviceData.cost),
+
+            notes: serviceData.notes.trim(),
+        })
+        .eq('id', recordId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
 export async function deleteServiceRecord(
     userId,
     recordId

@@ -1,4 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+    useState,
+    useEffect,
+    useCallback,
+    useRef,
+} from 'react';
 
 import {
     View,
@@ -11,11 +16,18 @@ import {
     Alert,
     RefreshControl,
     KeyboardAvoidingView,
+    Keyboard,
     Platform,
+    Modal,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import DateTimePicker, {
+    DateTimePickerAndroid,
+} from '@react-native-community/datetimepicker';
 
 import { useAuth } from '../context/AuthContext';
 import { useVehicles } from '../context/VehicleContext';
@@ -23,6 +35,7 @@ import { useVehicles } from '../context/VehicleContext';
 import {
     getServiceRecords,
     createServiceRecord,
+    updateServiceRecord,
     deleteServiceRecord,
 } from '../services/serviceRecordService';
 
@@ -35,6 +48,40 @@ const SERVICE_TYPES = [
     'Other',
 ];
 
+function formatDate(date) {
+    const year = date.getFullYear();
+
+    const month = String(
+        date.getMonth() + 1
+    ).padStart(2, '0');
+
+    const day = String(
+        date.getDate()
+    ).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+function parseDate(dateString) {
+    if (!dateString) {
+        return new Date();
+    }
+
+    const [year, month, day] = dateString
+        .split('-')
+        .map(Number);
+
+    const date = new Date(
+        year,
+        month - 1,
+        day
+    );
+
+    return Number.isNaN(date.getTime())
+        ? new Date()
+        : date;
+}
+
 export default function ServicesScreen() {
     const { user } = useAuth();
     const { vehicles } = useVehicles();
@@ -45,25 +92,41 @@ export default function ServicesScreen() {
     const [records, setRecords] = useState([]);
 
     const [isLoading, setIsLoading] = useState(false);
-    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isRefreshing, setIsRefreshing] =
+        useState(false);
+
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [showForm, setShowForm] = useState(false);
+
+    const [editingRecordId, setEditingRecordId] =
+        useState(null);
 
     const [serviceType, setServiceType] =
         useState('Oil Change');
 
     const [serviceDate, setServiceDate] = useState(
-        new Date().toISOString().slice(0, 10)
+        formatDate(new Date())
     );
 
     const [mileage, setMileage] = useState('');
     const [cost, setCost] = useState('');
     const [notes, setNotes] = useState('');
 
+    const [showIosDatePicker, setShowIosDatePicker] =
+        useState(false);
+
+    const [temporaryDate, setTemporaryDate] =
+        useState(new Date());
+
+    const latestRequestId = useRef(0);
+
     const selectedVehicle = vehicles.find(
-        vehicle => vehicle.id === selectedVehicleId
+        (vehicle) => vehicle.id === selectedVehicleId
     );
+
+    const isEditMode = Boolean(editingRecordId);
 
     useEffect(() => {
         if (vehicles.length === 0) {
@@ -72,7 +135,8 @@ export default function ServicesScreen() {
         }
 
         const vehicleExists = vehicles.some(
-            vehicle => vehicle.id === selectedVehicleId
+            (vehicle) =>
+                vehicle.id === selectedVehicleId
         );
 
         if (!vehicleExists) {
@@ -82,8 +146,13 @@ export default function ServicesScreen() {
 
     const loadRecords = useCallback(
         async (refresh = false) => {
+            const requestId =
+                ++latestRequestId.current;
+
             if (!user?.id || !selectedVehicleId) {
                 setRecords([]);
+                setIsLoading(false);
+                setIsRefreshing(false);
                 return;
             }
 
@@ -99,16 +168,28 @@ export default function ServicesScreen() {
                     selectedVehicleId
                 );
 
-                setRecords(data);
+                if (
+                    requestId === latestRequestId.current
+                ) {
+                    setRecords(data);
+                }
             } catch (error) {
-                Alert.alert(
-                    'Error',
-                    error.message ||
-                        'Unable to load service history.'
-                );
+                if (
+                    requestId === latestRequestId.current
+                ) {
+                    Alert.alert(
+                        'Error',
+                        error.message ||
+                            'Unable to load service history.'
+                    );
+                }
             } finally {
-                setIsLoading(false);
-                setIsRefreshing(false);
+                if (
+                    requestId === latestRequestId.current
+                ) {
+                    setIsLoading(false);
+                    setIsRefreshing(false);
+                }
             }
         },
         [user?.id, selectedVehicleId]
@@ -116,13 +197,21 @@ export default function ServicesScreen() {
 
     useEffect(() => {
         loadRecords();
+
+        return () => {
+            latestRequestId.current += 1;
+        };
     }, [loadRecords]);
 
     function resetForm() {
+        setEditingRecordId(null);
+
         setServiceType('Oil Change');
+
         setServiceDate(
-            new Date().toISOString().slice(0, 10)
+            formatDate(new Date())
         );
+
         setMileage('');
         setCost('');
         setNotes('');
@@ -132,8 +221,25 @@ export default function ServicesScreen() {
         resetForm();
 
         if (selectedVehicle) {
-            setMileage(String(selectedVehicle.mileage));
+            setMileage(
+                String(selectedVehicle.mileage ?? '')
+            );
         }
+
+        setShowForm(true);
+    }
+
+    function editRecordHandler(record) {
+        Keyboard.dismiss();
+
+        setEditingRecordId(record.id);
+
+        setServiceType(record.service_type);
+        setServiceDate(record.service_date);
+
+        setMileage(String(record.mileage));
+        setCost(String(record.cost ?? '0'));
+        setNotes(record.notes ?? '');
 
         setShowForm(true);
     }
@@ -143,37 +249,81 @@ export default function ServicesScreen() {
             return;
         }
 
+        Keyboard.dismiss();
+
         setShowForm(false);
+        setShowIosDatePicker(false);
+
+        resetForm();
+    }
+
+    function openDatePickerHandler() {
+        Keyboard.dismiss();
+
+        const currentDate = parseDate(serviceDate);
+
+        if (Platform.OS === 'android') {
+            DateTimePickerAndroid.open({
+                value: currentDate,
+                mode: 'date',
+                maximumDate: new Date(),
+
+                onChange: (event, selectedDate) => {
+                    if (
+                        event.type === 'set' &&
+                        selectedDate
+                    ) {
+                        setServiceDate(
+                            formatDate(selectedDate)
+                        );
+                    }
+                },
+            });
+
+            return;
+        }
+
+        setTemporaryDate(currentDate);
+        setShowIosDatePicker(true);
+    }
+
+    function confirmIosDateHandler() {
+        setServiceDate(
+            formatDate(temporaryDate)
+        );
+
+        setShowIosDatePicker(false);
     }
 
     function validateForm() {
-        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-
-        if (!datePattern.test(serviceDate)) {
-            return 'Date must be in YYYY-MM-DD format.';
+        if (!SERVICE_TYPES.includes(serviceType)) {
+            return 'Please select a service type.';
         }
 
-        const [year, month, day] = serviceDate
-            .split('-')
-            .map(Number);
-
-        const parsedDate = new Date(
-            Date.UTC(year, month - 1, day)
-        );
+        const selectedDate = parseDate(serviceDate);
 
         if (
-            parsedDate.getUTCFullYear() !== year ||
-            parsedDate.getUTCMonth() !== month - 1 ||
-            parsedDate.getUTCDate() !== day
+            formatDate(selectedDate) !== serviceDate
         ) {
-            return 'Please enter a valid date.';
+            return 'Please select a valid service date.';
         }
 
         if (
-            !/^\d+$/.test(mileage) ||
-            !Number.isSafeInteger(Number(mileage))
+            selectedDate.getTime() >
+            new Date().getTime()
         ) {
-            return 'Mileage must be a valid whole number.';
+            return 'Service date cannot be in the future.';
+        }
+
+        const mileageValue = mileage.trim();
+
+        if (
+            !/^\d+$/.test(mileageValue) ||
+            !Number.isSafeInteger(
+                Number(mileageValue)
+            )
+        ) {
+            return 'Mileage must be a non-negative whole number.';
         }
 
         const costValue = cost.trim();
@@ -182,17 +332,22 @@ export default function ServicesScreen() {
             costValue &&
             (
                 !/^\d+(\.\d{1,2})?$/.test(costValue) ||
-                !Number.isFinite(Number(costValue))
+                !Number.isFinite(Number(costValue)) ||
+                Number(costValue) > 99999999.99
             )
         ) {
-            return 'Cost must be a valid positive amount.';
+            return 'Enter a valid cost with up to 2 decimal places.';
         }
 
         return null;
     }
 
     async function saveServiceHandler() {
-        if (isSaving || !selectedVehicleId || !user?.id) {
+        if (
+            isSaving ||
+            !selectedVehicleId ||
+            !user?.id
+        ) {
             return;
         }
 
@@ -203,28 +358,40 @@ export default function ServicesScreen() {
                 'Validation Error',
                 validationError
             );
+
             return;
         }
 
         setIsSaving(true);
 
+        const serviceData = {
+            serviceType,
+            serviceDate,
+            mileage,
+            cost: cost.trim() || '0',
+            notes,
+        };
+
         try {
-            await createServiceRecord(
-                user.id,
-                selectedVehicleId,
-                {
-                    serviceType,
-                    serviceDate,
-                    mileage,
-                    cost: cost.trim() || '0',
-                    notes,
-                }
-            );
+            if (isEditMode) {
+                await updateServiceRecord(
+                    user.id,
+                    editingRecordId,
+                    serviceData
+                );
+            } else {
+                await createServiceRecord(
+                    user.id,
+                    selectedVehicleId,
+                    serviceData
+                );
+            }
 
             setShowForm(false);
             resetForm();
 
             await loadRecords();
+
         } catch (error) {
             Alert.alert(
                 'Save Error',
@@ -237,9 +404,13 @@ export default function ServicesScreen() {
     }
 
     function deleteRecordHandler(record) {
+        if (isDeleting) {
+            return;
+        }
+
         Alert.alert(
             'Delete Service',
-            'Are you sure you want to delete this service?',
+            'Are you sure you want to delete this service record?',
             [
                 {
                     text: 'Cancel',
@@ -248,7 +419,14 @@ export default function ServicesScreen() {
                 {
                     text: 'Delete',
                     style: 'destructive',
+
                     onPress: async () => {
+                        if (!user?.id) {
+                            return;
+                        }
+
+                        setIsDeleting(true);
+
                         try {
                             await deleteServiceRecord(
                                 user.id,
@@ -256,12 +434,15 @@ export default function ServicesScreen() {
                             );
 
                             await loadRecords();
+
                         } catch (error) {
                             Alert.alert(
                                 'Delete Error',
                                 error.message ||
                                     'Unable to delete service.'
                             );
+                        } finally {
+                            setIsDeleting(false);
                         }
                     },
                 },
@@ -269,10 +450,27 @@ export default function ServicesScreen() {
         );
     }
 
+    function selectVehicleHandler(vehicleId) {
+        if (
+            isSaving ||
+            isDeleting ||
+            vehicleId === selectedVehicleId
+        ) {
+            return;
+        }
+
+        setRecords([]);
+        setShowForm(false);
+
+        resetForm();
+
+        setSelectedVehicleId(vehicleId);
+    }
+
     function renderVehicleSelector() {
         return (
             <View style={styles.vehicleSelector}>
-                {vehicles.map(vehicle => {
+                {vehicles.map((vehicle) => {
                     const isSelected =
                         vehicle.id === selectedVehicleId;
 
@@ -285,7 +483,7 @@ export default function ServicesScreen() {
                                     styles.selectedVehicleChip,
                             ]}
                             onPress={() =>
-                                setSelectedVehicleId(vehicle.id)
+                                selectVehicleHandler(vehicle.id)
                             }
                         >
                             <Ionicons
@@ -318,17 +516,28 @@ export default function ServicesScreen() {
         return (
             <View style={styles.formCard}>
                 <View style={styles.formHeader}>
-                    <Text style={styles.formTitle}>
-                        New Service
-                    </Text>
+                    <View>
+                        <Text style={styles.formTitle}>
+                            {isEditMode
+                                ? 'Edit Service'
+                                : 'New Service'}
+                        </Text>
+
+                        <Text style={styles.formSubtitle}>
+                            {isEditMode
+                                ? 'Update maintenance details'
+                                : 'Record vehicle maintenance'}
+                        </Text>
+                    </View>
 
                     <Pressable
                         onPress={closeFormHandler}
                         disabled={isSaving}
+                        style={styles.closeIconButton}
                     >
                         <Ionicons
                             name="close"
-                            size={25}
+                            size={22}
                             color="#9CA3AF"
                         />
                     </Pressable>
@@ -339,7 +548,7 @@ export default function ServicesScreen() {
                 </Text>
 
                 <View style={styles.serviceTypes}>
-                    {SERVICE_TYPES.map(type => {
+                    {SERVICE_TYPES.map((type) => {
                         const isSelected =
                             serviceType === type;
 
@@ -354,6 +563,7 @@ export default function ServicesScreen() {
                                 onPress={() =>
                                     setServiceType(type)
                                 }
+                                disabled={isSaving}
                             >
                                 <Text
                                     style={[
@@ -373,13 +583,29 @@ export default function ServicesScreen() {
                     Service Date
                 </Text>
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#6B7280"
-                    value={serviceDate}
-                    onChangeText={setServiceDate}
-                />
+                <Pressable
+                    style={styles.dateButton}
+                    onPress={openDatePickerHandler}
+                    disabled={isSaving}
+                >
+                    <View style={styles.dateContent}>
+                        <Ionicons
+                            name="calendar-outline"
+                            size={22}
+                            color="#FF7A00"
+                        />
+
+                        <Text style={styles.dateText}>
+                            {serviceDate}
+                        </Text>
+                    </View>
+
+                    <Ionicons
+                        name="chevron-down"
+                        size={20}
+                        color="#FF7A00"
+                    />
+                </Pressable>
 
                 <Text style={styles.label}>
                     Mileage (km)
@@ -392,6 +618,7 @@ export default function ServicesScreen() {
                     keyboardType="default"
                     value={mileage}
                     onChangeText={setMileage}
+                    editable={!isSaving}
                 />
 
                 <Text style={styles.label}>
@@ -405,6 +632,7 @@ export default function ServicesScreen() {
                     keyboardType="default"
                     value={cost}
                     onChangeText={setCost}
+                    editable={!isSaving}
                 />
 
                 <Text style={styles.label}>
@@ -421,6 +649,7 @@ export default function ServicesScreen() {
                     multiline
                     value={notes}
                     onChangeText={setNotes}
+                    editable={!isSaving}
                 />
 
                 <Pressable
@@ -432,20 +661,38 @@ export default function ServicesScreen() {
                     disabled={isSaving}
                 >
                     {isSaving ? (
-                        <ActivityIndicator color="#FFFFFF" />
+                        <ActivityIndicator
+                            color="#FFFFFF"
+                        />
                     ) : (
                         <>
                             <Ionicons
-                                name="checkmark-circle-outline"
-                                size={21}
+                                name={
+                                    isEditMode
+                                        ? 'checkmark-circle-outline'
+                                        : 'save-outline'
+                                }
+                                size={22}
                                 color="#FFFFFF"
                             />
 
                             <Text style={styles.saveButtonText}>
-                                Save Service
+                                {isEditMode
+                                    ? 'Save Changes'
+                                    : 'Save Service'}
                             </Text>
                         </>
                     )}
+                </Pressable>
+
+                <Pressable
+                    style={styles.cancelButton}
+                    onPress={closeFormHandler}
+                    disabled={isSaving}
+                >
+                    <Text style={styles.cancelButtonText}>
+                        Cancel
+                    </Text>
                 </Pressable>
             </View>
         );
@@ -475,31 +722,34 @@ export default function ServicesScreen() {
                             {record.service_date}
                         </Text>
                     </View>
-
-                    <Pressable
-                        onPress={() =>
-                            deleteRecordHandler(record)
-                        }
-                        hitSlop={10}
-                    >
-                        <Ionicons
-                            name="trash-outline"
-                            size={21}
-                            color="#EF4444"
-                        />
-                    </Pressable>
                 </View>
 
                 <View style={styles.recordDivider} />
 
                 <View style={styles.recordDetails}>
-                    <Text style={styles.recordInfo}>
-                        {Number(record.mileage).toLocaleString()} km
-                    </Text>
+                    <View>
+                        <Text style={styles.detailLabel}>
+                            MILEAGE
+                        </Text>
 
-                    <Text style={styles.recordCost}>
-                        {Number(record.cost).toFixed(2)}
-                    </Text>
+                        <Text style={styles.recordInfo}>
+                            {Number(
+                                record.mileage
+                            ).toLocaleString()} km
+                        </Text>
+                    </View>
+
+                    <View style={styles.costContainer}>
+                        <Text style={styles.detailLabel}>
+                            COST
+                        </Text>
+
+                        <Text style={styles.recordCost}>
+                            {Number(
+                                record.cost
+                            ).toFixed(2)}
+                        </Text>
+                    </View>
                 </View>
 
                 {!!record.notes && (
@@ -507,7 +757,109 @@ export default function ServicesScreen() {
                         {record.notes}
                     </Text>
                 )}
+
+                <View style={styles.recordActions}>
+                    <Pressable
+                        style={styles.editButton}
+                        onPress={() =>
+                            editRecordHandler(record)
+                        }
+                        disabled={isDeleting || isSaving}
+                    >
+                        <Ionicons
+                            name="create-outline"
+                            size={19}
+                            color="#FF7A00"
+                        />
+
+                        <Text style={styles.editButtonText}>
+                            Edit
+                        </Text>
+                    </Pressable>
+
+                    <Pressable
+                        style={styles.deleteButton}
+                        onPress={() =>
+                            deleteRecordHandler(record)
+                        }
+                        disabled={isDeleting || isSaving}
+                    >
+                        <Ionicons
+                            name="trash-outline"
+                            size={19}
+                            color="#EF4444"
+                        />
+
+                        <Text style={styles.deleteButtonText}>
+                            Delete
+                        </Text>
+                    </Pressable>
+                </View>
             </View>
+        );
+    }
+
+    function renderIosDatePicker() {
+        return (
+            <Modal
+                visible={showIosDatePicker}
+                transparent
+                animationType="fade"
+                onRequestClose={() =>
+                    setShowIosDatePicker(false)
+                }
+            >
+                <View style={styles.dateModalOverlay}>
+                    <View style={styles.dateModalContent}>
+                        <View style={styles.dateModalHeader}>
+                            <Text style={styles.dateModalTitle}>
+                                Select Service Date
+                            </Text>
+
+                            <Pressable
+                                onPress={() =>
+                                    setShowIosDatePicker(false)
+                                }
+                            >
+                                <Ionicons
+                                    name="close"
+                                    size={24}
+                                    color="#9CA3AF"
+                                />
+                            </Pressable>
+                        </View>
+
+                        <DateTimePicker
+                            value={temporaryDate}
+                            mode="date"
+                            display="spinner"
+                            themeVariant="dark"
+                            textColor="#FFFFFF"
+                            maximumDate={new Date()}
+                            onChange={(
+                                event,
+                                selectedDate
+                            ) => {
+                                if (selectedDate) {
+                                    setTemporaryDate(
+                                        selectedDate
+                                    );
+                                }
+                            }}
+                            style={styles.iosDatePicker}
+                        />
+
+                        <Pressable
+                            style={styles.confirmDateButton}
+                            onPress={confirmIosDateHandler}
+                        >
+                            <Text style={styles.confirmDateText}>
+                                Confirm Date
+                            </Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
         );
     }
 
@@ -538,8 +890,9 @@ export default function ServicesScreen() {
                         />
                     }
                 >
+
                     <View style={styles.pageHeader}>
-                        <View>
+                        <View style={styles.headerText}>
                             <Text style={styles.eyebrow}>
                                 AUTOCARE MAINTENANCE
                             </Text>
@@ -580,6 +933,7 @@ export default function ServicesScreen() {
                         </View>
                     ) : (
                         <>
+
                             <Text style={styles.sectionTitle}>
                                 Select Vehicle
                             </Text>
@@ -600,6 +954,10 @@ export default function ServicesScreen() {
                                 <Pressable
                                     style={styles.addButton}
                                     onPress={openFormHandler}
+                                    disabled={
+                                        isSaving ||
+                                        isDeleting
+                                    }
                                 >
                                     <Ionicons
                                         name="add-circle-outline"
@@ -645,6 +1003,9 @@ export default function ServicesScreen() {
                     )}
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {Platform.OS === 'ios' &&
+                renderIosDatePicker()}
         </SafeAreaView>
     );
 }
@@ -670,6 +1031,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 32,
+    },
+
+    headerText: {
+        flex: 1,
+        paddingRight: 12,
     },
 
     eyebrow: {
@@ -773,14 +1139,29 @@ const styles = StyleSheet.create({
     formHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
+        alignItems: 'flex-start',
+        marginBottom: 24,
     },
 
     formTitle: {
         color: '#FFFFFF',
         fontSize: 21,
         fontWeight: 'bold',
+        marginBottom: 5,
+    },
+
+    formSubtitle: {
+        color: '#9CA3AF',
+        fontSize: 13,
+    },
+
+    closeIconButton: {
+        backgroundColor: '#292F3A',
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
     label: {
@@ -837,6 +1218,31 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 
+    dateButton: {
+        backgroundColor: '#0F1117',
+        borderWidth: 1,
+        borderColor: '#303641',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        height: 54,
+        marginBottom: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+
+    dateContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+
+    dateText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '500',
+    },
+
     saveButton: {
         backgroundColor: '#FF7A00',
         borderRadius: 12,
@@ -855,6 +1261,20 @@ const styles = StyleSheet.create({
 
     disabledButton: {
         opacity: 0.6,
+    },
+
+    cancelButton: {
+        backgroundColor: '#303641',
+        borderRadius: 12,
+        paddingVertical: 15,
+        alignItems: 'center',
+        marginTop: 12,
+    },
+
+    cancelButtonText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: 'bold',
     },
 
     recordCard: {
@@ -906,16 +1326,30 @@ const styles = StyleSheet.create({
     recordDetails: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+
+    detailLabel: {
+        color: '#6B7280',
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+        marginBottom: 6,
     },
 
     recordInfo: {
         color: '#D1D5DB',
-        fontSize: 14,
+        fontSize: 15,
+        fontWeight: '600',
+    },
+
+    costContainer: {
+        alignItems: 'flex-end',
     },
 
     recordCost: {
         color: '#FF7A00',
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: 'bold',
     },
 
@@ -923,7 +1357,51 @@ const styles = StyleSheet.create({
         color: '#9CA3AF',
         fontSize: 13,
         lineHeight: 20,
-        marginTop: 14,
+        marginTop: 16,
+    },
+
+    recordActions: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 20,
+    },
+
+    editButton: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: '#332519',
+        borderWidth: 1,
+        borderColor: '#FF7A00',
+        paddingVertical: 12,
+        borderRadius: 11,
+    },
+
+    editButtonText: {
+        color: '#FF7A00',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+
+    deleteButton: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: '#301F26',
+        borderWidth: 1,
+        borderColor: '#65303A',
+        paddingVertical: 12,
+        borderRadius: 11,
+    },
+
+    deleteButtonText: {
+        color: '#EF4444',
+        fontSize: 14,
+        fontWeight: 'bold',
     },
 
     emptyCard: {
@@ -952,5 +1430,52 @@ const styles = StyleSheet.create({
 
     loader: {
         marginVertical: 35,
+    },
+
+    dateModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+    },
+
+    dateModalContent: {
+        backgroundColor: '#1C212B',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#303641',
+        padding: 20,
+    },
+
+    dateModalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+
+    dateModalTitle: {
+        color: '#FFFFFF',
+        fontSize: 19,
+        fontWeight: 'bold',
+    },
+
+    iosDatePicker: {
+        height: 180,
+        width: '100%',
+    },
+
+    confirmDateButton: {
+        backgroundColor: '#FF7A00',
+        borderRadius: 12,
+        paddingVertical: 15,
+        alignItems: 'center',
+        marginTop: 14,
+    },
+
+    confirmDateText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });
