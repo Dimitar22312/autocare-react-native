@@ -38,6 +38,7 @@ import {
     updateServiceRecord,
     deleteServiceRecord,
 } from '../services/serviceRecordService';
+import MaintenanceStats from '../components/MaintenanceStats';
 
 const SERVICE_TYPES = [
     'Oil Change',
@@ -180,7 +181,7 @@ export default function ServicesScreen() {
                     Alert.alert(
                         'Error',
                         error.message ||
-                            'Unable to load service history.'
+                        'Unable to load service history.'
                     );
                 }
             } finally {
@@ -396,7 +397,7 @@ export default function ServicesScreen() {
             Alert.alert(
                 'Save Error',
                 error.message ||
-                    'Unable to save service record.'
+                'Unable to save service record.'
             );
         } finally {
             setIsSaving(false);
@@ -439,7 +440,7 @@ export default function ServicesScreen() {
                             Alert.alert(
                                 'Delete Error',
                                 error.message ||
-                                    'Unable to delete service.'
+                                'Unable to delete service.'
                             );
                         } finally {
                             setIsDeleting(false);
@@ -480,7 +481,7 @@ export default function ServicesScreen() {
                             style={[
                                 styles.vehicleChip,
                                 isSelected &&
-                                    styles.selectedVehicleChip,
+                                styles.selectedVehicleChip,
                             ]}
                             onPress={() =>
                                 selectVehicleHandler(vehicle.id)
@@ -500,7 +501,7 @@ export default function ServicesScreen() {
                                 style={[
                                     styles.vehicleChipText,
                                     isSelected &&
-                                        styles.selectedVehicleText,
+                                    styles.selectedVehicleText,
                                 ]}
                             >
                                 {vehicle.brand} {vehicle.model}
@@ -558,7 +559,7 @@ export default function ServicesScreen() {
                                 style={[
                                     styles.typeChip,
                                     isSelected &&
-                                        styles.selectedTypeChip,
+                                    styles.selectedTypeChip,
                                 ]}
                                 onPress={() =>
                                     setServiceType(type)
@@ -569,7 +570,7 @@ export default function ServicesScreen() {
                                     style={[
                                         styles.typeText,
                                         isSelected &&
-                                            styles.selectedTypeText,
+                                        styles.selectedTypeText,
                                     ]}
                                 >
                                     {type}
@@ -939,6 +940,10 @@ export default function ServicesScreen() {
                             </Text>
 
                             {renderVehicleSelector()}
+
+                            {!isLoading && (
+                                <MaintenanceStats records={records} />
+                            )}
 
                             <View style={styles.historyHeader}>
                                 <Text style={styles.sectionTitle}>
