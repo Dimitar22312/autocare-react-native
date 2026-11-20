@@ -9,6 +9,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
+import ServicesScreen from '../screens/ServicesScreen';
 import VehicleDetailsScreen from '../screens/VehicleDetailsScreen';
 
 import LoginScreen from '../screens/LoginScreen';
@@ -39,6 +40,7 @@ function GarageTabs() {
                     paddingTop: 6,
                     paddingBottom: 8,
                 },
+
                 sceneStyle: {
                     backgroundColor: '#0F1117',
                 },
@@ -49,10 +51,15 @@ function GarageTabs() {
                 },
 
                 tabBarIcon: ({ color, size }) => {
-                    const iconName =
-                        route.name === 'Home'
-                            ? 'car-sport-outline'
-                            : 'person-outline';
+                    let iconName = 'person-outline';
+
+                    if (route.name === 'Home') {
+                        iconName = 'car-sport-outline';
+                    }
+
+                    if (route.name === 'Services') {
+                        iconName = 'build-outline';
+                    }
 
                     return (
                         <Ionicons
@@ -73,13 +80,21 @@ function GarageTabs() {
             />
 
             <Tab.Screen
+                name="Services"
+                component={ServicesScreen}
+                options={{
+                    title: 'Services',
+                }}
+            />
+
+            <Tab.Screen
                 name="Profile"
                 component={ProfileScreen}
                 options={{
                     title: 'Profile',
                 }}
             />
-        </Tab.Navigator>
+        </Tab.Navigator >
     );
 }
 
