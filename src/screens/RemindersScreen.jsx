@@ -27,6 +27,7 @@ import { useReminders } from '../context/ReminderContext';
 import ReminderCard from '../components/reminders/ReminderCard';
 import ReminderForm from '../components/reminders/ReminderForm';
 import MaintenanceAlertCard from '../components/reminders/MaintenanceAlertCard';
+import NotificationSettings from '../components/reminders/NotificationSettings';
 
 import { getMaintenanceAlerts } from '../utils/maintenanceAlerts';
 
@@ -370,6 +371,8 @@ export default function RemindersScreen() {
                             </Text>
                         </View>
                     </View>
+
+                    <NotificationSettings />
 
                     {maintenanceAlerts.length > 0 && (
                         <View style={styles.section}>

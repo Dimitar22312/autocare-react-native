@@ -23,6 +23,7 @@ import {
     ReminderProvider,
     useReminders,
 } from '../context/ReminderContext';
+import { NotificationProvider } from '../context/NotificationContext';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -158,6 +159,7 @@ function MainNavigator() {
     return (
         <VehicleProvider>
             <ReminderProvider>
+                <NotificationProvider> 
                 <Stack.Navigator
                     screenOptions={{
                         contentStyle: {
@@ -189,6 +191,7 @@ function MainNavigator() {
                         }}
                     />
                 </Stack.Navigator>
+            </NotificationProvider>
             </ReminderProvider>
         </VehicleProvider>
     );
