@@ -7,6 +7,7 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import RemindersScreen from '../screens/RemindersScreen';
 
 import HomeScreen from '../screens/HomeScreen';
 import ServicesScreen from '../screens/ServicesScreen';
@@ -18,11 +19,17 @@ import ProfileScreen from '../screens/ProfileScreen';
 
 import { useAuth } from '../context/AuthContext';
 import { VehicleProvider } from '../context/VehicleContext';
+import {
+    ReminderProvider,
+    useReminders,
+} from '../context/ReminderContext';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function GarageTabs() {
+    const { badgeCount } = useReminders();
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
@@ -61,6 +68,10 @@ function GarageTabs() {
                         iconName = 'build-outline';
                     }
 
+                    if (route.name === 'Reminders') {
+                        iconName = 'notifications-outline';
+                    }
+
                     return (
                         <Ionicons
                             name={iconName}
@@ -84,6 +95,28 @@ function GarageTabs() {
                 component={ServicesScreen}
                 options={{
                     title: 'Services',
+                }}
+            />
+
+            <Tab.Screen
+                name="Reminders"
+                component={RemindersScreen}
+                options={{
+                    title: 'Reminders',
+
+                    tabBarBadge:
+                        badgeCount > 0
+                            ? badgeCount > 99
+                                ? '99+'
+                                : badgeCount
+                            : undefined,
+
+                    tabBarBadgeStyle: {
+                        backgroundColor: '#FF7A00',
+                        color: '#FFFFFF',
+                        fontSize: 10,
+                        fontWeight: 'bold',
+                    },
                 }}
             />
 
@@ -124,36 +157,39 @@ function AuthNavigator() {
 function MainNavigator() {
     return (
         <VehicleProvider>
-            <Stack.Navigator
-                screenOptions={{
-                    contentStyle: {
-                        backgroundColor: '#0F1117',
-                    },
-                }}
-            >
-                <Stack.Screen
-                    name="GarageTabs"
-                    component={GarageTabs}
-                    options={{
-                        headerShown: false,
-                        title: 'My Garage',
-                    }}
-                />
-
-                <Stack.Screen
-                    name="VehicleDetails"
-                    component={VehicleDetailsScreen}
-                    options={{
-                        title: 'Vehicle Details',
-
-                        headerStyle: {
+            <ReminderProvider>
+                <Stack.Navigator
+                    screenOptions={{
+                        contentStyle: {
                             backgroundColor: '#0F1117',
                         },
-
-                        headerTintColor: '#FFFFFF',
                     }}
-                />
-            </Stack.Navigator>
+                >
+                    <Stack.Screen
+                        name="GarageTabs"
+                        component={GarageTabs}
+                        options={{
+                            headerShown: false,
+                            title: 'My Garage',
+                        }}
+                    />
+
+                    <Stack.Screen
+                        name="VehicleDetails"
+                        component={VehicleDetailsScreen}
+                        options={{
+                            title: 'Vehicle Details',
+
+                            headerStyle: {
+                                backgroundColor: '#0F1117',
+                            },
+
+                            headerTintColor: '#FFFFFF',
+                            headerBackTitle: 'Garage',
+                        }}
+                    />
+                </Stack.Navigator>
+            </ReminderProvider>
         </VehicleProvider>
     );
 }
