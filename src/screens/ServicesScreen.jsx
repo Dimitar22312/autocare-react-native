@@ -8,7 +8,6 @@ import {
 import {
     View,
     Text,
-    TextInput,
     ScrollView,
     Pressable,
     StyleSheet,
@@ -22,7 +21,6 @@ import {
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { Ionicons } from '@expo/vector-icons';
 
 import DateTimePicker, {
@@ -38,7 +36,16 @@ import {
     updateServiceRecord,
     deleteServiceRecord,
 } from '../services/serviceRecordService';
+
 import MaintenanceStats from '../components/MaintenanceStats';
+
+import ServiceCard from '../components/services/ServiceCard';
+import ServiceForm from '../components/services/ServiceForm';
+
+
+// --------------------------------------------------
+// Constants
+// --------------------------------------------------
 
 const SERVICE_TYPES = [
     'Oil Change',
@@ -48,6 +55,11 @@ const SERVICE_TYPES = [
     'Inspection',
     'Other',
 ];
+
+
+// --------------------------------------------------
+// Date Helpers
+// --------------------------------------------------
 
 function formatDate(date) {
     const year = date.getFullYear();
@@ -64,70 +76,105 @@ function formatDate(date) {
 }
 
 function parseDate(dateString) {
-    if (!dateString) {
-        return new Date();
+    if (
+        typeof dateString !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
+    ) {
+        return null;
     }
 
     const [year, month, day] = dateString
         .split('-')
         .map(Number);
 
-    const date = new Date(
-        year,
-        month - 1,
-        day
-    );
+    const date = new Date(year, month - 1, day);
 
-    return Number.isNaN(date.getTime())
-        ? new Date()
-        : date;
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return null;
+    }
+
+    return date;
 }
+
+
+// --------------------------------------------------
+// Services Screen
+// --------------------------------------------------
 
 export default function ServicesScreen() {
     const { user } = useAuth();
     const { vehicles } = useVehicles();
 
-    const [selectedVehicleId, setSelectedVehicleId] =
-        useState(null);
+    // Vehicle State
+
+    const [
+        selectedVehicleId,
+        setSelectedVehicleId,
+    ] = useState(null);
+
+    const selectedVehicle = vehicles.find(
+        (vehicle) => vehicle.id === selectedVehicleId
+    );
+
+    // Records State
 
     const [records, setRecords] = useState([]);
 
     const [isLoading, setIsLoading] = useState(false);
-    const [isRefreshing, setIsRefreshing] =
-        useState(false);
+
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const [isSaving, setIsSaving] = useState(false);
+
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const latestRequestId = useRef(0);
+
+    // Form State
 
     const [showForm, setShowForm] = useState(false);
 
-    const [editingRecordId, setEditingRecordId] =
-        useState(null);
+    const [
+        editingRecordId,
+        setEditingRecordId,
+    ] = useState(null);
 
-    const [serviceType, setServiceType] =
-        useState('Oil Change');
+    const [serviceType, setServiceType] = useState(
+        'Oil Change'
+    );
 
     const [serviceDate, setServiceDate] = useState(
         formatDate(new Date())
     );
 
     const [mileage, setMileage] = useState('');
+
     const [cost, setCost] = useState('');
+
     const [notes, setNotes] = useState('');
 
-    const [showIosDatePicker, setShowIosDatePicker] =
-        useState(false);
-
-    const [temporaryDate, setTemporaryDate] =
-        useState(new Date());
-
-    const latestRequestId = useRef(0);
-
-    const selectedVehicle = vehicles.find(
-        (vehicle) => vehicle.id === selectedVehicleId
-    );
-
     const isEditMode = Boolean(editingRecordId);
+
+    // Date Picker State
+
+    const [
+        showIosDatePicker,
+        setShowIosDatePicker,
+    ] = useState(false);
+
+    const [
+        temporaryDate,
+        setTemporaryDate,
+    ] = useState(new Date());
+
+
+    // --------------------------------------------------
+    // Automatically Select Vehicle
+    // --------------------------------------------------
 
     useEffect(() => {
         if (vehicles.length === 0) {
@@ -136,8 +183,7 @@ export default function ServicesScreen() {
         }
 
         const vehicleExists = vehicles.some(
-            (vehicle) =>
-                vehicle.id === selectedVehicleId
+            (vehicle) => vehicle.id === selectedVehicleId
         );
 
         if (!vehicleExists) {
@@ -145,10 +191,14 @@ export default function ServicesScreen() {
         }
     }, [vehicles, selectedVehicleId]);
 
+
+    // --------------------------------------------------
+    // Load Service Records
+    // --------------------------------------------------
+
     const loadRecords = useCallback(
         async (refresh = false) => {
-            const requestId =
-                ++latestRequestId.current;
+            const requestId = ++latestRequestId.current;
 
             if (!user?.id || !selectedVehicleId) {
                 setRecords([]);
@@ -169,25 +219,19 @@ export default function ServicesScreen() {
                     selectedVehicleId
                 );
 
-                if (
-                    requestId === latestRequestId.current
-                ) {
-                    setRecords(data);
+                if (requestId === latestRequestId.current) {
+                    setRecords(data ?? []);
                 }
             } catch (error) {
-                if (
-                    requestId === latestRequestId.current
-                ) {
+                if (requestId === latestRequestId.current) {
                     Alert.alert(
                         'Error',
                         error.message ||
-                        'Unable to load service history.'
+                            'Unable to load service history.'
                     );
                 }
             } finally {
-                if (
-                    requestId === latestRequestId.current
-                ) {
+                if (requestId === latestRequestId.current) {
                     setIsLoading(false);
                     setIsRefreshing(false);
                 }
@@ -195,6 +239,11 @@ export default function ServicesScreen() {
         },
         [user?.id, selectedVehicleId]
     );
+
+
+    // --------------------------------------------------
+    // Initial Load
+    // --------------------------------------------------
 
     useEffect(() => {
         loadRecords();
@@ -204,46 +253,65 @@ export default function ServicesScreen() {
         };
     }, [loadRecords]);
 
+
+    // --------------------------------------------------
+    // Reset Form
+    // --------------------------------------------------
+
     function resetForm() {
         setEditingRecordId(null);
-
         setServiceType('Oil Change');
-
-        setServiceDate(
-            formatDate(new Date())
-        );
-
+        setServiceDate(formatDate(new Date()));
         setMileage('');
         setCost('');
         setNotes('');
     }
 
+
+    // --------------------------------------------------
+    // Open Add Form
+    // --------------------------------------------------
+
     function openFormHandler() {
+        if (!selectedVehicle || isSaving || isDeleting) {
+            return;
+        }
+
         resetForm();
 
-        if (selectedVehicle) {
-            setMileage(
-                String(selectedVehicle.mileage ?? '')
-            );
-        }
+        setMileage(
+            String(selectedVehicle.mileage ?? '')
+        );
 
         setShowForm(true);
     }
 
+
+    // --------------------------------------------------
+    // Open Edit Form
+    // --------------------------------------------------
+
     function editRecordHandler(record) {
+        if (isSaving || isDeleting) {
+            return;
+        }
+
         Keyboard.dismiss();
 
         setEditingRecordId(record.id);
-
         setServiceType(record.service_type);
         setServiceDate(record.service_date);
-
-        setMileage(String(record.mileage));
+        setMileage(String(record.mileage ?? ''));
         setCost(String(record.cost ?? '0'));
         setNotes(record.notes ?? '');
 
         setShowForm(true);
     }
+
+
+    // --------------------------------------------------
+    // Close Form
+    // --------------------------------------------------
 
     function closeFormHandler() {
         if (isSaving) {
@@ -258,10 +326,16 @@ export default function ServicesScreen() {
         resetForm();
     }
 
+
+    // --------------------------------------------------
+    // Open Native Date Picker
+    // --------------------------------------------------
+
     function openDatePickerHandler() {
         Keyboard.dismiss();
 
-        const currentDate = parseDate(serviceDate);
+        const currentDate =
+            parseDate(serviceDate) ?? new Date();
 
         if (Platform.OS === 'android') {
             DateTimePickerAndroid.open({
@@ -288,13 +362,20 @@ export default function ServicesScreen() {
         setShowIosDatePicker(true);
     }
 
-    function confirmIosDateHandler() {
-        setServiceDate(
-            formatDate(temporaryDate)
-        );
 
+    // --------------------------------------------------
+    // Confirm iOS Date
+    // --------------------------------------------------
+
+    function confirmIosDateHandler() {
+        setServiceDate(formatDate(temporaryDate));
         setShowIosDatePicker(false);
     }
+
+
+    // --------------------------------------------------
+    // Validate Form
+    // --------------------------------------------------
 
     function validateForm() {
         if (!SERVICE_TYPES.includes(serviceType)) {
@@ -303,16 +384,15 @@ export default function ServicesScreen() {
 
         const selectedDate = parseDate(serviceDate);
 
-        if (
-            formatDate(selectedDate) !== serviceDate
-        ) {
+        if (!selectedDate) {
             return 'Please select a valid service date.';
         }
 
-        if (
-            selectedDate.getTime() >
-            new Date().getTime()
-        ) {
+        const today = new Date();
+
+        today.setHours(0, 0, 0, 0);
+
+        if (selectedDate > today) {
             return 'Service date cannot be in the future.';
         }
 
@@ -320,9 +400,7 @@ export default function ServicesScreen() {
 
         if (
             !/^\d+$/.test(mileageValue) ||
-            !Number.isSafeInteger(
-                Number(mileageValue)
-            )
+            !Number.isSafeInteger(Number(mileageValue))
         ) {
             return 'Mileage must be a non-negative whole number.';
         }
@@ -343,9 +421,15 @@ export default function ServicesScreen() {
         return null;
     }
 
+
+    // --------------------------------------------------
+    // Create / Update Service
+    // --------------------------------------------------
+
     async function saveServiceHandler() {
         if (
             isSaving ||
+            isDeleting ||
             !selectedVehicleId ||
             !user?.id
         ) {
@@ -363,12 +447,14 @@ export default function ServicesScreen() {
             return;
         }
 
+        Keyboard.dismiss();
+
         setIsSaving(true);
 
         const serviceData = {
             serviceType,
             serviceDate,
-            mileage,
+            mileage: mileage.trim(),
             cost: cost.trim() || '0',
             notes,
         };
@@ -392,20 +478,28 @@ export default function ServicesScreen() {
             resetForm();
 
             await loadRecords();
-
         } catch (error) {
             Alert.alert(
                 'Save Error',
                 error.message ||
-                'Unable to save service record.'
+                    'Unable to save service record.'
             );
         } finally {
             setIsSaving(false);
         }
     }
 
+
+    // --------------------------------------------------
+    // Delete Service
+    // --------------------------------------------------
+
     function deleteRecordHandler(record) {
-        if (isDeleting) {
+        if (
+            isDeleting ||
+            isSaving ||
+            !user?.id
+        ) {
             return;
         }
 
@@ -435,12 +529,11 @@ export default function ServicesScreen() {
                             );
 
                             await loadRecords();
-
                         } catch (error) {
                             Alert.alert(
                                 'Delete Error',
                                 error.message ||
-                                'Unable to delete service.'
+                                    'Unable to delete service.'
                             );
                         } finally {
                             setIsDeleting(false);
@@ -450,6 +543,11 @@ export default function ServicesScreen() {
             ]
         );
     }
+
+
+    // --------------------------------------------------
+    // Select Vehicle
+    // --------------------------------------------------
 
     function selectVehicleHandler(vehicleId) {
         if (
@@ -462,11 +560,17 @@ export default function ServicesScreen() {
 
         setRecords([]);
         setShowForm(false);
+        setShowIosDatePicker(false);
 
         resetForm();
 
         setSelectedVehicleId(vehicleId);
     }
+
+
+    // --------------------------------------------------
+    // Vehicle Selector
+    // --------------------------------------------------
 
     function renderVehicleSelector() {
         return (
@@ -481,11 +585,12 @@ export default function ServicesScreen() {
                             style={[
                                 styles.vehicleChip,
                                 isSelected &&
-                                styles.selectedVehicleChip,
+                                    styles.selectedVehicleChip,
                             ]}
                             onPress={() =>
                                 selectVehicleHandler(vehicle.id)
                             }
+                            disabled={isSaving || isDeleting}
                         >
                             <Ionicons
                                 name="car-sport"
@@ -501,7 +606,7 @@ export default function ServicesScreen() {
                                 style={[
                                     styles.vehicleChipText,
                                     isSelected &&
-                                    styles.selectedVehicleText,
+                                        styles.selectedVehicleText,
                                 ]}
                             >
                                 {vehicle.brand} {vehicle.model}
@@ -513,292 +618,10 @@ export default function ServicesScreen() {
         );
     }
 
-    function renderForm() {
-        return (
-            <View style={styles.formCard}>
-                <View style={styles.formHeader}>
-                    <View>
-                        <Text style={styles.formTitle}>
-                            {isEditMode
-                                ? 'Edit Service'
-                                : 'New Service'}
-                        </Text>
 
-                        <Text style={styles.formSubtitle}>
-                            {isEditMode
-                                ? 'Update maintenance details'
-                                : 'Record vehicle maintenance'}
-                        </Text>
-                    </View>
-
-                    <Pressable
-                        onPress={closeFormHandler}
-                        disabled={isSaving}
-                        style={styles.closeIconButton}
-                    >
-                        <Ionicons
-                            name="close"
-                            size={22}
-                            color="#9CA3AF"
-                        />
-                    </Pressable>
-                </View>
-
-                <Text style={styles.label}>
-                    Service Type
-                </Text>
-
-                <View style={styles.serviceTypes}>
-                    {SERVICE_TYPES.map((type) => {
-                        const isSelected =
-                            serviceType === type;
-
-                        return (
-                            <Pressable
-                                key={type}
-                                style={[
-                                    styles.typeChip,
-                                    isSelected &&
-                                    styles.selectedTypeChip,
-                                ]}
-                                onPress={() =>
-                                    setServiceType(type)
-                                }
-                                disabled={isSaving}
-                            >
-                                <Text
-                                    style={[
-                                        styles.typeText,
-                                        isSelected &&
-                                        styles.selectedTypeText,
-                                    ]}
-                                >
-                                    {type}
-                                </Text>
-                            </Pressable>
-                        );
-                    })}
-                </View>
-
-                <Text style={styles.label}>
-                    Service Date
-                </Text>
-
-                <Pressable
-                    style={styles.dateButton}
-                    onPress={openDatePickerHandler}
-                    disabled={isSaving}
-                >
-                    <View style={styles.dateContent}>
-                        <Ionicons
-                            name="calendar-outline"
-                            size={22}
-                            color="#FF7A00"
-                        />
-
-                        <Text style={styles.dateText}>
-                            {serviceDate}
-                        </Text>
-                    </View>
-
-                    <Ionicons
-                        name="chevron-down"
-                        size={20}
-                        color="#FF7A00"
-                    />
-                </Pressable>
-
-                <Text style={styles.label}>
-                    Mileage (km)
-                </Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Vehicle mileage"
-                    placeholderTextColor="#6B7280"
-                    keyboardType="default"
-                    value={mileage}
-                    onChangeText={setMileage}
-                    editable={!isSaving}
-                />
-
-                <Text style={styles.label}>
-                    Cost
-                </Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 250.00"
-                    placeholderTextColor="#6B7280"
-                    keyboardType="default"
-                    value={cost}
-                    onChangeText={setCost}
-                    editable={!isSaving}
-                />
-
-                <Text style={styles.label}>
-                    Notes (Optional)
-                </Text>
-
-                <TextInput
-                    style={[
-                        styles.input,
-                        styles.notesInput,
-                    ]}
-                    placeholder="What was done?"
-                    placeholderTextColor="#6B7280"
-                    multiline
-                    value={notes}
-                    onChangeText={setNotes}
-                    editable={!isSaving}
-                />
-
-                <Pressable
-                    style={[
-                        styles.saveButton,
-                        isSaving && styles.disabledButton,
-                    ]}
-                    onPress={saveServiceHandler}
-                    disabled={isSaving}
-                >
-                    {isSaving ? (
-                        <ActivityIndicator
-                            color="#FFFFFF"
-                        />
-                    ) : (
-                        <>
-                            <Ionicons
-                                name={
-                                    isEditMode
-                                        ? 'checkmark-circle-outline'
-                                        : 'save-outline'
-                                }
-                                size={22}
-                                color="#FFFFFF"
-                            />
-
-                            <Text style={styles.saveButtonText}>
-                                {isEditMode
-                                    ? 'Save Changes'
-                                    : 'Save Service'}
-                            </Text>
-                        </>
-                    )}
-                </Pressable>
-
-                <Pressable
-                    style={styles.cancelButton}
-                    onPress={closeFormHandler}
-                    disabled={isSaving}
-                >
-                    <Text style={styles.cancelButtonText}>
-                        Cancel
-                    </Text>
-                </Pressable>
-            </View>
-        );
-    }
-
-    function renderRecord(record) {
-        return (
-            <View
-                key={record.id}
-                style={styles.recordCard}
-            >
-                <View style={styles.recordHeader}>
-                    <View style={styles.recordIcon}>
-                        <Ionicons
-                            name="construct-outline"
-                            size={24}
-                            color="#FF7A00"
-                        />
-                    </View>
-
-                    <View style={styles.recordTitleContainer}>
-                        <Text style={styles.recordTitle}>
-                            {record.service_type}
-                        </Text>
-
-                        <Text style={styles.recordDate}>
-                            {record.service_date}
-                        </Text>
-                    </View>
-                </View>
-
-                <View style={styles.recordDivider} />
-
-                <View style={styles.recordDetails}>
-                    <View>
-                        <Text style={styles.detailLabel}>
-                            MILEAGE
-                        </Text>
-
-                        <Text style={styles.recordInfo}>
-                            {Number(
-                                record.mileage
-                            ).toLocaleString()} km
-                        </Text>
-                    </View>
-
-                    <View style={styles.costContainer}>
-                        <Text style={styles.detailLabel}>
-                            COST
-                        </Text>
-
-                        <Text style={styles.recordCost}>
-                            {Number(
-                                record.cost
-                            ).toFixed(2)}
-                        </Text>
-                    </View>
-                </View>
-
-                {!!record.notes && (
-                    <Text style={styles.recordNotes}>
-                        {record.notes}
-                    </Text>
-                )}
-
-                <View style={styles.recordActions}>
-                    <Pressable
-                        style={styles.editButton}
-                        onPress={() =>
-                            editRecordHandler(record)
-                        }
-                        disabled={isDeleting || isSaving}
-                    >
-                        <Ionicons
-                            name="create-outline"
-                            size={19}
-                            color="#FF7A00"
-                        />
-
-                        <Text style={styles.editButtonText}>
-                            Edit
-                        </Text>
-                    </Pressable>
-
-                    <Pressable
-                        style={styles.deleteButton}
-                        onPress={() =>
-                            deleteRecordHandler(record)
-                        }
-                        disabled={isDeleting || isSaving}
-                    >
-                        <Ionicons
-                            name="trash-outline"
-                            size={19}
-                            color="#EF4444"
-                        />
-
-                        <Text style={styles.deleteButtonText}>
-                            Delete
-                        </Text>
-                    </Pressable>
-                </View>
-            </View>
-        );
-    }
+    // --------------------------------------------------
+    // iOS Date Picker
+    // --------------------------------------------------
 
     function renderIosDatePicker() {
         return (
@@ -837,14 +660,9 @@ export default function ServicesScreen() {
                             themeVariant="dark"
                             textColor="#FFFFFF"
                             maximumDate={new Date()}
-                            onChange={(
-                                event,
-                                selectedDate
-                            ) => {
+                            onChange={(event, selectedDate) => {
                                 if (selectedDate) {
-                                    setTemporaryDate(
-                                        selectedDate
-                                    );
+                                    setTemporaryDate(selectedDate);
                                 }
                             }}
                             style={styles.iosDatePicker}
@@ -863,6 +681,11 @@ export default function ServicesScreen() {
             </Modal>
         );
     }
+
+
+    // --------------------------------------------------
+    // Main Render
+    // --------------------------------------------------
 
     return (
         <SafeAreaView
@@ -884,13 +707,12 @@ export default function ServicesScreen() {
                     refreshControl={
                         <RefreshControl
                             refreshing={isRefreshing}
-                            onRefresh={() =>
-                                loadRecords(true)
-                            }
+                            onRefresh={() => loadRecords(true)}
                             tintColor="#FF7A00"
                         />
                     }
                 >
+                    {/* Header */}
 
                     <View style={styles.pageHeader}>
                         <View style={styles.headerText}>
@@ -916,6 +738,8 @@ export default function ServicesScreen() {
                     </View>
 
                     {vehicles.length === 0 ? (
+                        // No Vehicles
+
                         <View style={styles.emptyCard}>
                             <Ionicons
                                 name="car-sport-outline"
@@ -934,6 +758,7 @@ export default function ServicesScreen() {
                         </View>
                     ) : (
                         <>
+                            {/* Vehicle Selection */}
 
                             <Text style={styles.sectionTitle}>
                                 Select Vehicle
@@ -941,9 +766,15 @@ export default function ServicesScreen() {
 
                             {renderVehicleSelector()}
 
+                            {/* Maintenance Statistics */}
+
                             {!isLoading && (
-                                <MaintenanceStats records={records} />
+                                <MaintenanceStats
+                                    records={records}
+                                />
                             )}
+
+                            {/* Service History Header */}
 
                             <View style={styles.historyHeader}>
                                 <Text style={styles.sectionTitle}>
@@ -951,17 +782,24 @@ export default function ServicesScreen() {
                                 </Text>
 
                                 <Text style={styles.recordCount}>
-                                    {records.length} records
+                                    {`${records.length} record${
+                                        records.length === 1 ? '' : 's'
+                                    }`}
                                 </Text>
                             </View>
 
+                            {/* Add Service */}
+
                             {!showForm && (
                                 <Pressable
-                                    style={styles.addButton}
+                                    style={[
+                                        styles.addButton,
+                                        (isSaving || isDeleting) &&
+                                            styles.disabledButton,
+                                    ]}
                                     onPress={openFormHandler}
                                     disabled={
-                                        isSaving ||
-                                        isDeleting
+                                        isSaving || isDeleting
                                     }
                                 >
                                     <Ionicons
@@ -976,7 +814,30 @@ export default function ServicesScreen() {
                                 </Pressable>
                             )}
 
-                            {showForm && renderForm()}
+                            {/* Service Form Component */}
+
+                            {showForm && (
+                                <ServiceForm
+                                    isEditMode={isEditMode}
+                                    serviceType={serviceType}
+                                    setServiceType={setServiceType}
+                                    serviceDate={serviceDate}
+                                    mileage={mileage}
+                                    setMileage={setMileage}
+                                    cost={cost}
+                                    setCost={setCost}
+                                    notes={notes}
+                                    setNotes={setNotes}
+                                    isSaving={isSaving}
+                                    onOpenDatePicker={
+                                        openDatePickerHandler
+                                    }
+                                    onSave={saveServiceHandler}
+                                    onCancel={closeFormHandler}
+                                />
+                            )}
+
+                            {/* Service History */}
 
                             {isLoading ? (
                                 <ActivityIndicator
@@ -1002,18 +863,39 @@ export default function ServicesScreen() {
                                     </Text>
                                 </View>
                             ) : (
-                                records.map(renderRecord)
+                                records.map((record) => (
+                                    <ServiceCard
+                                        key={record.id}
+                                        record={record}
+                                        onEdit={() =>
+                                            editRecordHandler(record)
+                                        }
+                                        onDelete={() =>
+                                            deleteRecordHandler(record)
+                                        }
+                                        disabled={
+                                            isSaving || isDeleting
+                                        }
+                                    />
+                                ))
                             )}
                         </>
                     )}
                 </ScrollView>
             </KeyboardAvoidingView>
 
+            {/* Native iOS Date Picker */}
+
             {Platform.OS === 'ios' &&
                 renderIosDatePicker()}
         </SafeAreaView>
     );
 }
+
+
+// --------------------------------------------------
+// Styles
+// --------------------------------------------------
 
 const styles = StyleSheet.create({
     flex: {
@@ -1070,6 +952,8 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
 
+    // Vehicle Selector
+
     vehicleSelector: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -1104,6 +988,8 @@ const styles = StyleSheet.create({
         color: '#FF7A00',
     },
 
+    // Service History
+
     historyHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -1132,282 +1018,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 
-    formCard: {
-        backgroundColor: '#1C212B',
-        borderRadius: 20,
-        padding: 20,
-        marginBottom: 24,
-        borderWidth: 1,
-        borderColor: '#303641',
-    },
-
-    formHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 24,
-    },
-
-    formTitle: {
-        color: '#FFFFFF',
-        fontSize: 21,
-        fontWeight: 'bold',
-        marginBottom: 5,
-    },
-
-    formSubtitle: {
-        color: '#9CA3AF',
-        fontSize: 13,
-    },
-
-    closeIconButton: {
-        backgroundColor: '#292F3A',
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    label: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 9,
-    },
-
-    input: {
-        backgroundColor: '#0F1117',
-        color: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#303641',
-        borderRadius: 12,
-        padding: 14,
-        fontSize: 15,
-        marginBottom: 18,
-    },
-
-    notesInput: {
-        minHeight: 95,
-        textAlignVertical: 'top',
-    },
-
-    serviceTypes: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 9,
-        marginBottom: 22,
-    },
-
-    typeChip: {
-        backgroundColor: '#252B36',
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        borderWidth: 1,
-        borderColor: 'transparent',
-    },
-
-    selectedTypeChip: {
-        backgroundColor: '#332519',
-        borderColor: '#FF7A00',
-    },
-
-    typeText: {
-        color: '#9CA3AF',
-        fontSize: 13,
-    },
-
-    selectedTypeText: {
-        color: '#FF7A00',
-        fontWeight: 'bold',
-    },
-
-    dateButton: {
-        backgroundColor: '#0F1117',
-        borderWidth: 1,
-        borderColor: '#303641',
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        height: 54,
-        marginBottom: 18,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-
-    dateContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-
-    dateText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '500',
-    },
-
-    saveButton: {
-        backgroundColor: '#FF7A00',
-        borderRadius: 12,
-        padding: 16,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 10,
-    },
-
-    saveButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-
     disabledButton: {
         opacity: 0.6,
     },
 
-    cancelButton: {
-        backgroundColor: '#303641',
-        borderRadius: 12,
-        paddingVertical: 15,
-        alignItems: 'center',
-        marginTop: 12,
-    },
-
-    cancelButtonText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: 'bold',
-    },
-
-    recordCard: {
-        backgroundColor: '#1C212B',
-        borderRadius: 18,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: '#303641',
-        marginBottom: 14,
-    },
-
-    recordHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-
-    recordIcon: {
-        width: 46,
-        height: 46,
-        borderRadius: 13,
-        backgroundColor: '#332519',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-
-    recordTitleContainer: {
-        flex: 1,
-    },
-
-    recordTitle: {
-        color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: 'bold',
-        marginBottom: 5,
-    },
-
-    recordDate: {
-        color: '#9CA3AF',
-        fontSize: 13,
-    },
-
-    recordDivider: {
-        height: 1,
-        backgroundColor: '#303641',
-        marginVertical: 15,
-    },
-
-    recordDetails: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-
-    detailLabel: {
-        color: '#6B7280',
-        fontSize: 10,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-        marginBottom: 6,
-    },
-
-    recordInfo: {
-        color: '#D1D5DB',
-        fontSize: 15,
-        fontWeight: '600',
-    },
-
-    costContainer: {
-        alignItems: 'flex-end',
-    },
-
-    recordCost: {
-        color: '#FF7A00',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-
-    recordNotes: {
-        color: '#9CA3AF',
-        fontSize: 13,
-        lineHeight: 20,
-        marginTop: 16,
-    },
-
-    recordActions: {
-        flexDirection: 'row',
-        gap: 12,
-        marginTop: 20,
-    },
-
-    editButton: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: '#332519',
-        borderWidth: 1,
-        borderColor: '#FF7A00',
-        paddingVertical: 12,
-        borderRadius: 11,
-    },
-
-    editButtonText: {
-        color: '#FF7A00',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-
-    deleteButton: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: '#301F26',
-        borderWidth: 1,
-        borderColor: '#65303A',
-        paddingVertical: 12,
-        borderRadius: 11,
-    },
-
-    deleteButtonText: {
-        color: '#EF4444',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
+    // Empty States
 
     emptyCard: {
         backgroundColor: '#1C212B',
@@ -1436,6 +1051,8 @@ const styles = StyleSheet.create({
     loader: {
         marginVertical: 35,
     },
+
+    // iOS Date Picker
 
     dateModalOverlay: {
         flex: 1,
