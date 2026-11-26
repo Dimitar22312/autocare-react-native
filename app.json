@@ -24,7 +24,8 @@
       "expo-status-bar",
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-font"
     ]
   }
 }

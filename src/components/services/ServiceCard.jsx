@@ -14,7 +14,7 @@ export default function ServiceCard({
     disabled = false,
 }) {
     return (
-        <View style={styles.container}>s
+        <View style={styles.container}>
 
             <View style={styles.header}>
                 <View style={styles.iconContainer}>

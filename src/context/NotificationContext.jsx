@@ -27,9 +27,21 @@ import {
 
 const NotificationContext = createContext(null);
 
+function isNetworkError(error) {
+    const message = [
+        error?.message,
+        error?.details,
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    return /fetch failed|failed to fetch|network request failed|network error|offline|internet connection/i.test(
+        message
+    );
+}
+
 export function NotificationProvider({ children }) {
     const { user } = useAuth();
-
     const { vehicles } = useVehicles();
 
     const {
@@ -38,14 +50,9 @@ export function NotificationProvider({ children }) {
         refreshReminders,
     } = useReminders();
 
-    const [notificationsEnabled, setNotificationsEnabled] =
-        useState(false);
-
-    const [isInitializing, setIsInitializing] =
-        useState(true);
-
-    const [isUpdating, setIsUpdating] =
-        useState(false);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const syncQueue = useRef(Promise.resolve());
 
@@ -149,6 +156,14 @@ export function NotificationProvider({ children }) {
             (state) => {
                 if (state === 'active' && user?.id) {
                     refreshReminders().catch((error) => {
+                        if (isNetworkError(error)) {
+                            console.log(
+                                'Reminder refresh skipped: device is offline.'
+                            );
+
+                            return;
+                        }
+
                         console.error(
                             'Reminder Refresh Error:',
                             error
